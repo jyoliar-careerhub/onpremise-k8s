@@ -1,0 +1,13 @@
+- name: "copy {{item}} to other masters"
+  copy: 
+    src: /tmp/pki/{{item}}
+    dest: /etc/kubernetes/pki/{{item}}
+  with_items:
+    - ca.crt
+    - ca.key
+    - sa.key
+    - sa.pub
+      
+     
+- name: Kubeadm init
+  shell: kubeadm init --config=/tmp/kubeadm-ha/kubeadm-config.yaml

@@ -1,0 +1,73 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 언어 설정
+
+이 프로젝트의 모든 마크다운(.md) 파일은 한국어로 작성해야 합니다.
+
+## 프로젝트 개요
+
+RHEL 7 환경에서 다중 데이터센터를 지원하는 고가용성(HA) Kubernetes 멀티마스터 클러스터를 자동 구축하는 Ansible 기반 IaC(Infrastructure as Code) 프로젝트입니다.
+
+## 주요 명령어
+
+```bash
+# 전체 클러스터 설치
+ansible-playbook -i inventory/mycluster playbooks/k8s-all.yaml
+
+# 연결 테스트
+ansible -m ping all -i inventory/mycluster
+
+# 개별 플레이북 실행 (예시)
+ansible-playbook -i inventory/mycluster playbooks/docker.yaml
+ansible-playbook -i inventory/mycluster playbooks/smoke-test.yaml
+
+# 클러스터 초기화 (재설치 시)
+ansible-playbook -i inventory/mycluster playbooks/cleanup-all-vms.yaml
+
+# 시크릿 암호화 키 생성
+head -c 32 /dev/urandom | base64
+```
+
+## 아키텍처
+
+### 설치 흐름 (k8s-all.yaml)
+
+1. **인프라 설정**: repos.yaml → ntpd.yaml
+2. **컨테이너 런타임**: docker.yaml
+3. **Kubernetes 설치**: kubeadm.yaml → setup-firewalld.yaml
+4. **HA etcd 클러스터**: ha-etcd.yaml (CFSSL 인증서 기반)
+5. **로드밸런서**: setup-haproxy.yaml (API 서버 HA)
+6. **컨트롤 플레인**: kubernetes-masters.yaml → kubernetes-add-workers.yaml
+7. **재구성 및 보안**: config-k8s-for-haproxy.yaml → encrypting-secrets.yaml
+8. **모니터링 및 검증**: heapster.yaml → smoke-test.yaml
+
+### 인벤토리 구조
+
+```
+[dc{N}-k8s-masters]     # 각 데이터센터의 마스터 노드
+[dc{N}-k8s-workers-vm]  # 각 데이터센터의 VM 워커 노드
+[dc{N}-k8s-workers-bm]  # 각 데이터센터의 베어메탈 워커 노드
+[k8s-masters:children]  # 전체 마스터 노드 그룹
+[k8s-workers:children]  # 전체 워커 노드 그룹
+[new-k8s-masters]       # 새로 추가할 마스터 노드
+[new-k8s-workers]       # 새로 추가할 워커 노드
+```
+
+### 주요 설정 변수 (inventory/mycluster)
+
+- `kubernetes_version`: Kubernetes 버전
+- `docker_version`: Docker 버전
+- `etcd_version`: etcd 버전
+- `pod_network_cidr`: Pod 네트워크 CIDR (기본: 10.244.0.0/16, Flannel용)
+- `virtual_ip`: Keepalived용 VIP
+- `setup`: `public` 또는 `private` (프라이빗 레지스트리 사용 여부)
+- `encoded_secret`: 시크릿 암호화 키 (Base64)
+
+### 역할(Roles) 구조
+
+30개의 Ansible 역할이 `roles/` 디렉토리에 위치하며, 각 역할은 표준 Ansible 구조를 따릅니다:
+- `tasks/main.yaml`: 태스크 정의
+- `templates/`: Jinja2 템플릿 (선택)
+- `files/`: 정적 파일 (선택)
