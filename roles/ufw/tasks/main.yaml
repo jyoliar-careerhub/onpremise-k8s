@@ -1,0 +1,180 @@
+- name: Install ufw
+  become: yes
+  apt:
+    name: ufw
+    state: present
+    update_cache: yes
+
+- name: Set default policies
+  become: yes
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - {direction: incoming, policy: deny}
+    - {direction: outgoing, policy: allow}
+
+- name: Allow SSH
+  become: yes
+  ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Open Kubernetes API server port
+  become: yes
+  ufw:
+    rule: allow
+    port: "6443"
+    proto: tcp
+
+- name: Open custom API port
+  become: yes
+  ufw:
+    rule: allow
+    port: "5443"
+    proto: tcp
+
+- name: Open etcd ports
+  become: yes
+  ufw:
+    rule: allow
+    port: "2379:2380"
+    proto: tcp
+
+- name: Open kubelet API port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10250"
+    proto: tcp
+
+- name: Open kube-scheduler port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10251"
+    proto: tcp
+
+- name: Open kube-controller-manager port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10252"
+    proto: tcp
+
+- name: Open CoreDNS ports
+  become: yes
+  ufw:
+    rule: allow
+    port: "10053"
+    proto: "{{ item }}"
+  loop:
+    - tcp
+    - udp
+
+- name: Open kubelet read-only port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10255"
+    proto: tcp
+
+- name: Open NodePort range
+  become: yes
+  ufw:
+    rule: allow
+    port: "30000:32767"
+    proto: tcp
+
+- name: Open Flannel VXLAN port
+  become: yes
+  ufw:
+    rule: allow
+    port: "8472"
+    proto: udp
+
+- name: Open Flannel UDP port
+  become: yes
+  ufw:
+    rule: allow
+    port: "8285"
+    proto: udp
+
+- name: Open metrics port
+  become: yes
+  ufw:
+    rule: allow
+    port: "9898"
+    proto: tcp
+
+- name: Open Node Exporter port
+  become: yes
+  ufw:
+    rule: allow
+    port: "9100"
+    proto: tcp
+
+- name: Open HTTPS port
+  become: yes
+  ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Open DNS ports
+  become: yes
+  ufw:
+    rule: allow
+    port: "53"
+    proto: "{{ item }}"
+  loop:
+    - tcp
+    - udp
+
+- name: Open cAdvisor port
+  become: yes
+  ufw:
+    rule: allow
+    port: "4194"
+    proto: tcp
+
+- name: Open Ingress controller port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10254"
+    proto: tcp
+
+- name: Open HAProxy stats port
+  become: yes
+  ufw:
+    rule: allow
+    port: "{{ haproxy_stats_port }}"
+    proto: tcp
+
+- name: Open HAProxy port
+  become: yes
+  ufw:
+    rule: allow
+    port: "{{ ha_proxy_port }}"
+    proto: tcp
+
+- name: Enable IP forwarding in ufw
+  become: yes
+  lineinfile:
+    path: /etc/ufw/sysctl.conf
+    regexp: "^#?net/ipv4/ip_forward"
+    line: "net/ipv4/ip_forward=1"
+
+- name: Enable IP forwarding for IPv6
+  become: yes
+  lineinfile:
+    path: /etc/ufw/sysctl.conf
+    regexp: "^#?net/ipv6/conf/default/forwarding"
+    line: "net/ipv6/conf/default/forwarding=1"
+
+- name: Enable ufw
+  become: yes
+  ufw:
+    state: enabled

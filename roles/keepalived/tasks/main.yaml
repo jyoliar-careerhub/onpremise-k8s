@@ -1,7 +1,9 @@
-- name: install keepalived
+- name: Install keepalived
   become: yes
-  yum:
+  apt:
     name: keepalived
+    state: present
+    update_cache: yes
 
 - name: deploy keepalived script
   become: yes

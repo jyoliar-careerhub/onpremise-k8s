@@ -1,79 +1,84 @@
-- name: cleanup kubernetes data
+- name: Cleanup kubernetes data
   shell: |
-    kubeadm reset
-    docker kill haproxy
-    docker rm haproxy
-    systemctl stop kubelet
-    systemctl stop docker
-    systemctl stop etcd
-    systemctl stop keepalived
-    rm /etc/systemd/system/kubelet.service.d/20-pod-infra-image.conf
+    kubeadm reset -f || true
+    crictl stop $(crictl ps -aq) || true
+    crictl rm $(crictl ps -aq) || true
+    systemctl stop kubelet || true
+    systemctl stop crio || true
+    systemctl stop etcd || true
+    systemctl stop keepalived || true
+    rm -f /etc/systemd/system/kubelet.service.d/20-crio.conf
     rm -rf /var/lib/cni/
     rm -rf /var/lib/kubelet/*
     rm -rf /etc/keepalived/*
     rm -rf /etc/cni/
-    rm -r /var/lib/etcd/member
-    ip link delete cni0
-    ip link delete flannel.1
+    rm -rf /var/lib/etcd/member
+    ip link delete cni0 || true
+    ip link delete flannel.1 || true
     mkdir -p /etc/keepalived
-    rm -rf /var/lib/docker
-    rm /usr/local/bin/etcd
-    rm /usr/local/bin/etcdctl
-    rm /usr/local/bin/cfssljson
-    rm /usr/local/bin/cfssl
+    rm -rf /var/lib/containers
+    rm -f /usr/local/bin/etcd
+    rm -f /usr/local/bin/etcdctl
+    rm -f /usr/local/bin/cfssljson
+    rm -f /usr/local/bin/cfssl
     rm -rf /etc/kubernetes
+  ignore_errors: yes
 
-# - name: Close ports
-#   firewalld:
-#     port: "{{item}}"
-#     permanent: true
-#     state: disabled
-#   with_items:
-#     - 6443/tcp
-#     - 2379-2380/tcp
-#     - 10250/tcp
-#     - 10251/tcp
-#     - 10252/tcp
-#     - 10053/tcp
-#     - 10053/udp
-#     - 10255/tcp
-#     - 30000-32767/tcp
-#     - 8082/tcp
-#     - 8472/udp
-#     - 8285/udp
-#     - 9898/tcp
-#     - 9100/tcp
-#     - 4194/tcp
-#     - 10254/tcp
-
-- name: remove yum packages
+- name: Disable ufw
   become: yes
-  yum:
-    name: "{{item}}"
-    state: absent
-  with_items:
-    - kubelet
-    - kubeadm
-    - kubectl
-    - docker-ce
-    - yum-utils
-    - device-mapper-persistent-data
-    - lvm2
-    - policycoreutils-python
-    - python-pip
-    - container-selinux
+  ufw:
+    state: disabled
+  ignore_errors: yes
 
-- name: Remove Artifactory repo
-  yum_repository:
-    name: Artifactory
+- name: Remove apt packages
+  become: yes
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - cri-o
+      - python3-pip
     state: absent
+    purge: yes
+    autoremove: yes
 
-- name: Remove docker-ce-stable repo
-  yum_repository:
-    name: docker-ce
+- name: Remove CRI-O GPG key
+  file:
+    path: /etc/apt/keyrings/cri-o-apt-keyring.gpg
     state: absent
 
-- name: Remove kubernetes repo
-  yum_repository:
-    name: kubernetes
+- name: Remove Kubernetes GPG key
+  file:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     state: absent
+
+- name: Remove Artifactory GPG key
+  file:
+    path: /etc/apt/keyrings/artifactory-keyring.gpg
+    state: absent
+
+- name: Remove CRI-O repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/ /"
+    state: absent
+    filename: cri-o
+  ignore_errors: yes
+
+- name: Remove Kubernetes repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /"
+    state: absent
+    filename: kubernetes
+  ignore_errors: yes
+
+- name: Remove Artifactory repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/artifactory-keyring.gpg trusted=yes] https://{{ container_registry_username | trim | urlencode() }}:{{ container_registry_password | trim }}@na.artifactory.swg-devops.com/artifactory/wh-imaging-prereqs-deb-local/ noble main"
+    state: absent
+    filename: artifactory
+  ignore_errors: yes
+
+- name: Update apt cache
+  apt:
+    update_cache: yes

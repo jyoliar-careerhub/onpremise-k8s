@@ -1,26 +1,72 @@
 - include_vars: ../../../../whis-platform/inventory/group_vars/local/vault
-- name: Add Artifactory repo
-  yum_repository:
-    name: Artifactory
-    description: Artifactory taas private repo
-    baseurl: https://{{docker_registry_username| trim| urlencode()}}:{{docker_registry_password| trim}}@na.artifactory.swg-devops.com/artifactory/wh-imaging-prereqs-rpm-local/
-    gpgcheck: no
+  ignore_errors: yes
+
+- name: Install required packages for apt repository
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - software-properties-common
+    state: present
+    update_cache: yes
+
+- name: Create keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+# CRI-O repository setup (OpenSUSE)
+- name: Add CRI-O GPG key
+  shell: |
+    curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/cri-o-apt-keyring.gpg
+  when: setup=="public"
+
+- name: Add CRI-O repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/ /"
+    state: present
+    filename: cri-o
+  when: setup=="public"
+
+# Kubernetes repository setup (pkgs.k8s.io)
+- name: Add Kubernetes GPG key
+  shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  when: setup=="public"
+
+- name: Add Kubernetes repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /"
+    state: present
+    filename: kubernetes
+  when: setup=="public"
+
+# Private repository setup (Artifactory)
+- name: Add Artifactory GPG key
+  shell: |
+    curl -fsSL https://{{ container_registry_username | trim | urlencode() }}:{{ container_registry_password | trim }}@na.artifactory.swg-devops.com/artifactory/api/gpg/key/public | \
+    gpg --dearmor -o /etc/apt/keyrings/artifactory-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/artifactory-keyring.gpg
+  when: setup=="private"
+  ignore_errors: yes
+
+- name: Add Artifactory apt repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/artifactory-keyring.gpg trusted=yes] https://{{ container_registry_username | trim | urlencode() }}:{{ container_registry_password | trim }}@na.artifactory.swg-devops.com/artifactory/wh-imaging-prereqs-deb-local/ noble main"
+    state: present
+    filename: artifactory
   when: setup=="private"
 
-- name: Add docker-ce-stable repo
-  yum_repository:
-    name: docker-ce
-    description: docker-ce stable repo
-    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
-    gpgkey: https://download.docker.com/linux/centos/gpg
-    gpgcheck: yes
-  when: setup=="public"
-
-- name: Add kubernetes repo
-  yum_repository:
-    name: kubernetes
-    description: Kubernetes repo
-    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
-    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    gpgcheck: yes
-  when: setup=="public"
+- name: Update apt cache
+  apt:
+    update_cache: yes

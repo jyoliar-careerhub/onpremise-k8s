@@ -1,22 +1,18 @@
-- name: install ntpd
+- name: Install chrony
   become: yes
-  yum:
-    name: ntp
+  apt:
+    name: chrony
     state: present
+    update_cache: yes
 
-- name: stop ntpd service
+- name: Ensure chrony service is enabled and started
   become: yes
-  service: 
-    name: ntpd 
-    state: stopped
-
-- name: sync time
-  become: yes
-  command: ntpd -gq
-
-- name: start ntpd service
-  become: yes
-  service: 
-    name: ntpd 
-    state: restarted 
+  systemd:
+    name: chrony
+    state: started
     enabled: yes
+
+- name: Force time sync
+  become: yes
+  command: chronyc makestep
+  changed_when: false

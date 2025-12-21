@@ -1,0 +1,6 @@
+- name: restart crio
+  become: yes
+  systemd:
+    name: crio
+    state: restarted
+    daemon_reload: yes

@@ -1,25 +1,27 @@
-- name: drain node
-  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config drain {{inventory_hostname}} --ignore-daemonsets
+- name: Drain node
+  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
   delegate_to: "{{ groups['k8s-masters'][0] }}"
 
-- name: upgrade kubelet 
-  yum:
+- name: Unhold kubelet package
+  become: yes
+  dpkg_selections:
     name: kubelet
-    state: "{{kubelet_version}}"
+    selection: install
 
-- replace:
-    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: 'KUBELET_KUBECONFIG_ARGS='
-    replace: 'KUBELET_KUBECONFIG_ARGS=--fail-swap-on=false '
-    backup: no
+- name: Upgrade kubelet
+  become: yes
+  apt:
+    name: kubelet={{ kubelet_version }}
+    state: present
+    update_cache: yes
 
-- replace:
-    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: 'cadvisor-port=0'
-    replace: 'cadvisor-port=4194'
-    backup: no
+- name: Hold kubelet package again
+  become: yes
+  dpkg_selections:
+    name: kubelet
+    selection: hold
 
-- name: restart kubelet
+- name: Restart kubelet
   systemd:
     state: restarted
     daemon_reload: yes
@@ -27,5 +29,5 @@
     enabled: yes
 
 - name: Bring the host back online
-  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config uncordon {{inventory_hostname}}
+  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config uncordon {{ inventory_hostname }}
   delegate_to: "{{ groups['k8s-masters'][0] }}"

@@ -1,16 +1,31 @@
-- name: upgrade kubeadm
-  yum:
+- name: Unhold kubeadm package
+  become: yes
+  dpkg_selections:
     name: kubeadm
-    state: "{{kubeadm_version}}"
-    
-- name: pip install pexpect
-  pip:
-    name: pexpect
-    extra_args: -i https://{{docker_registry_username| trim}}:{{docker_registry_password| trim}}@na.artifactory.swg-devops.com/artifactory/api/pypi/wh-imaging-pypi-local/simple
+    selection: install
+
+- name: Upgrade kubeadm
+  become: yes
+  apt:
+    name: kubeadm={{ kubeadm_version }}
+    state: present
+    update_cache: yes
+
+- name: Hold kubeadm package again
+  become: yes
+  dpkg_selections:
+    name: kubeadm
+    selection: hold
+
+- name: Install pexpect
+  become: yes
+  apt:
+    name: python3-pexpect
+    state: present
 
 - name: Run kubeadm upgrade
   expect:
-    command: kubeadm upgrade apply {{upgrade_version}}
+    command: kubeadm upgrade apply {{ upgrade_version }}
     echo: yes
     timeout: 250
     responses:

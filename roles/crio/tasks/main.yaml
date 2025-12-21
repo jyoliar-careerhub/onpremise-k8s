@@ -1,0 +1,40 @@
+- name: Install CRI-O
+  become: yes
+  apt:
+    name:
+      - cri-o
+    state: present
+    update_cache: yes
+
+- name: Enable and start CRI-O service
+  become: yes
+  systemd:
+    name: crio
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Ensure CRI-O socket exists
+  wait_for:
+    path: /var/run/crio/crio.sock
+    state: present
+    timeout: 30
+
+- name: Verify CRI-O is running
+  command: crictl info
+  register: crio_info
+  changed_when: false
+  failed_when: crio_info.rc != 0
+
+- name: Configure CRI-O registries for private registry
+  template:
+    src: registries.conf.j2
+    dest: /etc/containers/registries.conf
+  when: setup=="private"
+  notify: restart crio
+
+- name: Login to private container registry
+  command: >
+    crictl pull --creds "{{ container_registry_username }}:{{ container_registry_password }}" {{ container_registry }}/pause:3.9
+  when: setup=="private"
+  ignore_errors: yes

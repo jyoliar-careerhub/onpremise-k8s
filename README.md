@@ -1,24 +1,24 @@
-# Ansible Playbooks To setup cross-datacenters Kubernetes HA (multi-master) on Redhat Enterprise Linux 7.  
+# Ansible Playbooks To setup cross-datacenters Kubernetes HA (multi-master) on Ubuntu 24.04 LTS
 
-This repository provides Ansible Playbooks To setup Kubernetes HA on Redhat Enterprise Linux 7. The playbooks are mainly inspired by Kubeadm documentation and other ansible tentatives on github. The playbooks could be used separately or as one playbook for a fully fledged HA cluster. 
+This repository provides Ansible Playbooks to setup Kubernetes HA on Ubuntu 24.04 LTS. The playbooks are mainly inspired by Kubeadm documentation and other ansible tentatives on github. The playbooks could be used separately or as one playbook for a fully fledged HA cluster.
 
 
-# Prerequisites: 
+# Prerequisites:
 
-RHEL 7.2+
-On your manager machine install python pip:
+Ubuntu 24.04 LTS
+
+On your manager machine install Python and pip:
 ```
-wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-rpm -ivh epel-release-latest-7.noarch.rpm
-yum install python-pip
+sudo apt update
+sudo apt install python3 python3-pip
 ```
 
 
 Install ansible on your ansible manager machine.
 
-* You can do: 
+* You can do:
 ```
-pip install ansible
+pip3 install ansible
 ```
 
 * Setup ssh access from master to workers.
@@ -40,11 +40,10 @@ myhostname.domain.com ansible_usehost=<ip>
 ```
 
 Also make sure to update the `vars` section:
-- choose the desired versions for kubernetes and docker
+- choose the desired versions for kubernetes and CRI-O
 - setup the pod network cidr (default setup is for flannel)
 - Setup the eviction hard properties for workers and masters
-- Choose whether you want to use a private setup or a public one, with a private setup, you need to provide the credentials to get the yum packages and docker images.
-- Specify the network zone for firewalld setup (default is public) 
+- Choose whether you want to use a private setup or a public one, with a private setup, you need to provide the credentials to get the apt packages and container images.
 
 There are different groups being defined and used, you can reuse mycluster file defined in inventory folder:
 ```
@@ -52,7 +51,7 @@ There are different groups being defined and used, you can reuse mycluster file 
 [dc1-k8s-workers-vm] # these are all the VM worker nodes of DC1
 [dc1-k8s-workers-bm] # these are all baremetal worker nodes of DC1
 ```
-We can have as many data centers as we need. For each data center, define the masters and workers and add them to `[k8s-masters:children]`, `[k8s-workers:children]`, and `[k8s-nodes:children]`. 
+We can have as many data centers as we need. For each data center, define the masters and workers and add them to `[k8s-masters:children]`, `[k8s-workers:children]`, and `[k8s-nodes:children]`.
 
 You can check that you can ping all the machines:
 
@@ -62,7 +61,7 @@ ansible -m ping all -i inventory/mycluster
 # Install a highly available kubernetes using kubeadm
 
 You can now run k8s-all playbook to get your cluster setup.
-You can also run the different playbooks separately for different purposes (setting up docker, etcd, keepalived, kubeadm ...).
+You can also run the different playbooks separately for different purposes (setting up CRI-O, etcd, keepalived, kubeadm ...).
 
 ```
 ansible-playbook -i inventory/mycluster  playbooks/k8s-all.yaml
@@ -70,19 +69,18 @@ ansible-playbook -i inventory/mycluster  playbooks/k8s-all.yaml
 
 # What k8s-all.yaml includes:
 
-- Adding the required yum repository (private or public)
-- Installing ntpd
-- Installing docker
+- Adding the required apt repository (private or public)
+- Installing chrony for time synchronization
+- Installing CRI-O container runtime
 - Installing kubeadm, kubelet and kubectl
-- Setting up the firewalld
+- Setting up ufw firewall
 - Generating etcd certificates and installing ha etcd cluster on all the master nodes
-- Installing haproxy 
+- Installing haproxy
 - Installing keepalived and setting up vip management (this optional, use only when you have a vip)
 - Setting up kubernetes masters
 - Adding the nodes to the cluster
 - Reconfiguring the nodes and components to communicate through haproxy
 - Encrypting kubernetes secrets at rest
-- Adding heapster
 - Running a smoke test
 
 # Restarting the install:
@@ -107,12 +105,11 @@ After that run the playbook:
 ansible-playbook -i inventory/mycluster  playbooks/encrypting-secrets.yaml
 ```
 
-# Work in progress:
-We will add the following items to this repository:
+# Supported Versions:
 
-- Kubeadm upgrade playbook
-- Adding the possibility of using other user then root
-- Addons, Prometheus support?
+- Kubernetes 1.35.x
+- CRI-O 1.35
+- Ubuntu 24.04 LTS
 
 # Contribution:
 

@@ -1,0 +1,16 @@
+unqualified-search-registries = ["{{ container_registry }}", "docker.io"]
+
+[[registry]]
+prefix = "{{ container_registry }}"
+location = "{{ container_registry }}"
+insecure = false
+
+[[registry.mirror]]
+location = "{{ container_registry }}"
+
+[[registry]]
+prefix = "docker.io"
+location = "docker.io"
+
+[[registry.mirror]]
+location = "{{ container_registry }}"

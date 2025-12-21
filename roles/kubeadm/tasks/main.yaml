@@ -7,37 +7,50 @@
 - name: Turn swap off
   shell: swapoff -a
 
-- name: set enforce
-  command: setenforce 0
+# SELinux not used on Ubuntu (AppArmor is default, no action needed)
 
-- name: install kubeadm packages
+- name: Install kubeadm packages
   become: yes
-  yum:
-    name: "{{item}}"
-    allow_downgrade: yes 
-  with_items:
-    - kubelet-{{kubelet_version}}
+  apt:
+    name:
+      - kubelet={{ kubelet_version }}
+      - kubeadm={{ kubeadm_version }}
+      - kubectl={{ kubectl_version }}
+    state: present
+    update_cache: yes
+
+- name: Hold kubernetes packages (prevent auto-upgrade)
+  become: yes
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
     - kubeadm
     - kubectl
 
-- name: detect docker's cgroup-driver
-  shell: docker info 2>/dev/null |grep -i cgroup | cut -d":" -f2 | tr -d " "
-  register: docker_cgroup_driver
-  
-- replace:
-    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: '--cgroup-driver=(systemd|cgroupfs)'
-    replace: '--cgroup-driver={{docker_cgroup_driver.stdout}}'
-    backup: no
+- name: Load br_netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
 
-- replace:
-    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: 'cadvisor-port=0'
-    replace: 'cadvisor-port=4194'
-    backup: no
-  
-- name: modprobe
-  command: modprobe br_netfilter
+- name: Ensure br_netfilter loads on boot
+  lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    line: 'br_netfilter'
+    state: present
+    create: yes
+
+- name: Load overlay module
+  modprobe:
+    name: overlay
+    state: present
+
+- name: Ensure overlay loads on boot
+  lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    line: 'overlay'
+    state: present
 
 - name: Add netbridge config ip6
   lineinfile:
@@ -53,44 +66,48 @@
     state: present
     create: yes
 
-- name: update sysctl
+- name: Enable IP forwarding
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: 'net.ipv4.ip_forward = 1'
+    state: present
+
+- name: Update sysctl
   command: sysctl --system
 
 - set_fact:
-   eviction_hard: "{{ kubelet_masters_eviction_hard }} "
+   eviction_hard: "{{ kubelet_masters_eviction_hard }}"
   when: inventory_hostname in groups["k8s-masters"]
 
 - set_fact:
-   eviction_hard: "{{ kubelet_workers_eviction_hard }} "
+   eviction_hard: "{{ kubelet_workers_eviction_hard }}"
   when: inventory_hostname in groups["k8s-workers"]
 
-- name: change pause container to private registry and add eviction hard
+- name: Create kubelet service directory
+  file:
+    path: /etc/systemd/system/kubelet.service.d
+    state: directory
+    mode: '0755'
+
+- name: Configure kubelet extra args for CRI-O
   lineinfile:
-    path: /etc/systemd/system/kubelet.service.d/20-pod-infra-image.conf
+    path: /etc/systemd/system/kubelet.service.d/20-crio.conf
     create: yes
     state: present
     line: |
        [Service]
-       Environment="KUBELET_EXTRA_ARGS=--pod-infra-container-image={{kubepause_container_image}} --eviction-hard={{eviction_hard}}"
+       Environment="KUBELET_EXTRA_ARGS=--container-runtime-endpoint=unix:///var/run/crio/crio.sock --eviction-hard={{ eviction_hard }}"
 
-
-
-
-
-- name: "Pulling image {{ item }}"
-  shell: docker pull "{{ item }}"
+- name: Pull container images with crictl
+  shell: crictl pull "{{ item }}"
   with_items:
     - "{{ kubeproxy_container_image }}"
     - "{{ kubepause_container_image }}"
     - "{{ flannel_container_image }}"
-    - "{{ heapster_container_image }}"
-    - "{{ kubedns_container_image }}"
-    - "{{ kubednsmasq_container_image }}"
-    - "{{ kubednssidecar_container_image }}"
- 
-#- name: restart kubelet
-#  systemd:
-#    state: restarted
-#    daemon_reload: yes
-#    name: kubelet
-#    enabled: yes
+    - "{{ coredns_container_image }}"
+  when: setup=="private"
+  ignore_errors: yes
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
