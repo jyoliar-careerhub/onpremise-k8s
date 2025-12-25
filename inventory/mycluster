@@ -1,38 +1,45 @@
 #DC1 masters
 [dc1-k8s-masters]
-<hostname> ansible_usehost=<ip>
+master0 ansible_host=10.0.25.101
+master1 ansible_host=10.0.25.102
+master2 ansible_host=10.0.25.103
+
+[dc1-k8s-masters:vars]
+ansible_user=ubuntu
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyJump=ubuntu@ansible.jyo-liar.com'
+
 #DC1 virtualmachines
 [dc1-k8s-workers-vm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 #DC1 baremetal
 [dc1-k8s-workers-bm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc1-k8s-workers:children]
 dc1-k8s-workers-bm
 dc1-k8s-workers-vm
 
 [dc2-k8s-masters]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers-vm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers-bm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers:children]
 dc2-k8s-workers-bm
 dc2-k8s-workers-vm
 
 [dc3-k8s-masters]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc3-k8s-workers-vm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc3-k8s-workers-bm]
-<hostname> ansible_usehost=<ip>
+<hostname> ansible_host=<ip>
 
 [dc3-k8s-workers:children]
 dc3-k8s-workers-bm
