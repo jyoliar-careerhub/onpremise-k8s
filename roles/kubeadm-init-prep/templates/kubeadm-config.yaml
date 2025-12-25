@@ -1,7 +1,7 @@
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 kubernetesVersion: v{{ kubernetes_version }}.0
-controlPlaneEndpoint: "{{ hostvars[groups['dc1-k8s-masters'][0]]['ansible_host'] }}:{{ ha_proxy_port | default(6443) }}"
+controlPlaneEndpoint: "{{ hostvars[groups['k8s-masters'][0]]['ansible_host'] }}:{{ ha_proxy_port | default(6443) }}"
 networking:
   podSubnet: {{ pod_network_cidr }}
 apiServer:
