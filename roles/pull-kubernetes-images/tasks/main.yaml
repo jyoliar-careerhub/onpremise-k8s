@@ -1,8 +1,11 @@
-- name: "Pulling image {{ item }}"
-  shell: docker pull "{{ item }}"
+- name: Pull Kubernetes images using kubeadm (public)
+  shell: kubeadm config images pull
+  when: setup == "public"
+
+- name: "Pulling image {{ item }} (private)"
+  shell: crictl pull "{{ item }}"
   with_items:
     - "{{ kubeapi_server_container_image }}"
     - "{{ kubescheduler_container_image }}"
     - "{{ kubecontroller_manager_container_image }}"
-
-    
+  when: setup == "private"

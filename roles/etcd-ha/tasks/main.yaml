@@ -1,4 +1,7 @@
-- include_vars: ../../../../whis-platform/inventory/group_vars/local/vault
+- name: Set etcd architecture
+  set_fact:
+    etcd_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
 - name: Generate etcd certs for each master node
   shell: |
     cd /etc/kubernetes/pki/etcd
@@ -21,7 +24,7 @@
 - replace:
     path: /etc/kubernetes/pki/etcd/config.json
     regexp: 'www\.example\.net'
-    replace: "{{ hostvars[inventory_hostname]['ansible_usehost'] }}"
+    replace: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
     backup: no
 
 - replace:
@@ -44,31 +47,29 @@
 
 - name: Download etcd
   get_url:
-    url: https://na.artifactory.swg-devops.com:443/artifactory/wh-imaging-prereqs-generic-local/tars/etcd-{{etcd_version}}-linux-amd64.tar.gz
+    url: "https://github.com/etcd-io/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ etcd_arch }}.tar.gz"
     dest: /tmp/
-    mode: 0710
-    force_basic_auth: yes
-    url_password: "{{docker_registry_password}}"
-    url_username: "{{docker_registry_username}}"
+    mode: '0755'
+    timeout: 120
 
 - name: Unarchive etcd
   unarchive:
-    src: /tmp/etcd-{{etcd_version}}-linux-amd64.tar.gz
+    src: "/tmp/etcd-{{ etcd_version }}-linux-{{ etcd_arch }}.tar.gz"
     dest: /tmp/
     remote_src: yes
 
 - name: Install etcd
   copy:
-    src: /tmp/etcd-{{ etcd_version }}-linux-amd64/etcd
+    src: "/tmp/etcd-{{ etcd_version }}-linux-{{ etcd_arch }}/etcd"
     dest: /usr/local/bin/etcd
-    mode: 0710
+    mode: '0755'
     remote_src: yes
 
 - name: Install etcdctl
   copy:
-    src: /tmp/etcd-{{ etcd_version }}-linux-amd64/etcdctl
+    src: "/tmp/etcd-{{ etcd_version }}-linux-{{ etcd_arch }}/etcdctl"
     dest: /usr/local/bin/etcdctl
-    mode: 0710
+    mode: '0755'
     remote_src: yes
 
 - name: Copy etcd config file

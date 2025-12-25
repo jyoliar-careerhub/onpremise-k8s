@@ -1,18 +1,17 @@
-- include_vars: ../../../../whis-platform/inventory/group_vars/local/vault
+- name: Set cfssl architecture
+  set_fact:
+    cfssl_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
 - name: Download cfssl
   get_url:
-    url: https://na.artifactory.swg-devops.com/artifactory/wh-imaging-prereqs-generic-local/bin/cfssl_linux-amd64
+    url: "https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssl_1.6.5_linux_{{ cfssl_arch }}"
     dest: /usr/local/bin/cfssl
-    mode: 0710
-    force_basic_auth: yes
-    url_password: "{{docker_registry_password}}"
-    url_username: "{{docker_registry_username}}"
-    
+    mode: '0755'
+    timeout: 120
+
 - name: Download cfssljson
   get_url:
-    url: https://na.artifactory.swg-devops.com/artifactory/wh-imaging-prereqs-generic-local/bin/cfssljson_linux-amd64
+    url: "https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssljson_1.6.5_linux_{{ cfssl_arch }}"
     dest: /usr/local/bin/cfssljson
-    mode: 0710
-    force_basic_auth: yes
-    url_password: "{{docker_registry_password}}"
-    url_username: "{{docker_registry_username}}"
+    mode: '0755'
+    timeout: 120

@@ -3,7 +3,7 @@
 - import_playbook: crio.yaml
 - import_playbook: kubeadm.yaml
 - import_playbook: setup-ufw.yaml
-- import_playbook: ha-etcd.yaml
+# - import_playbook: ha-etcd.yaml  # stacked etcd 사용 (kubeadm 자동 설치)
 # - import_playbook: setup-haproxy.yaml # optional when no vip is used and when using haproxy
 - import_playbook: setup-haproxy.yaml
 - import_playbook: kubernetes-masters.yaml

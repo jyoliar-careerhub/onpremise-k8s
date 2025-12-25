@@ -39,7 +39,7 @@ backend back-api-proxy
   option tcplog
   balance roundrobin
   {% for item in groups['k8s-masters'] %}
-    server {{ item }} {{hostvars[item]["ansible_usehost"]}}:6443 check {% if(((item in groups["dc1-k8s-nodes"]) and (inventory_hostname in groups["dc2-k8s-nodes"])) or ((item in groups["dc2-k8s-nodes"]) and (inventory_hostname in groups["dc1-k8s-nodes"])))%}backup{%endif%}
+    server {{ item }} {{hostvars[item]["ansible_host"]}}:6443 check {% if(((item in groups["dc1-k8s-nodes"]) and (inventory_hostname in groups["dc2-k8s-nodes"])) or ((item in groups["dc2-k8s-nodes"]) and (inventory_hostname in groups["dc1-k8s-nodes"])))%}backup{%endif%}
   {% endfor %}
 
 #############################
@@ -58,5 +58,5 @@ backend back-etcd-proxy
   option tcplog
   balance roundrobin
   {% for item in groups['k8s-masters'] %}
-    server {{ item }} {{hostvars[item]["ansible_usehost"]}}:2379 check {% if(((item in groups["dc1-k8s-nodes"]) and (inventory_hostname in groups["dc2-k8s-nodes"])) or ((item in groups["dc2-k8s-nodes"]) and (inventory_hostname in groups["dc1-k8s-nodes"])))%}backup{%endif%}
+    server {{ item }} {{hostvars[item]["ansible_host"]}}:2379 check {% if(((item in groups["dc1-k8s-nodes"]) and (inventory_hostname in groups["dc2-k8s-nodes"])) or ((item in groups["dc2-k8s-nodes"]) and (inventory_hostname in groups["dc1-k8s-nodes"])))%}backup{%endif%}
   {% endfor %}

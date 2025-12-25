@@ -1,5 +1,4 @@
-- include_vars: ../../../../whis-platform/inventory/group_vars/local/vault
-  ignore_errors: yes
+# vault 참조 제거됨 (whis-platform 프로젝트 의존성)
 
 - name: Install required packages for apt repository
   apt:

@@ -1,5 +1,3 @@
-- include_vars: ../../../../whis-platform/inventory/group_vars/local/vault
-
 - name: copy flannel yaml
   template:
     src: flannel.yaml.j2

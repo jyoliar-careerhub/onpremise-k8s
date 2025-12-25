@@ -1,10 +1,27 @@
+- name: Set CRI-O architecture
+  set_fact:
+    crio_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+
+- name: Download CRI-O from GCS
+  become: yes
+  get_url:
+    url: "https://storage.googleapis.com/cri-o/artifacts/cri-o.{{ crio_arch }}.v{{ crio_version }}.0.tar.gz"
+    dest: /tmp/cri-o.tar.gz
+    timeout: 120
+
+- name: Extract CRI-O
+  become: yes
+  unarchive:
+    src: /tmp/cri-o.tar.gz
+    dest: /tmp
+    remote_src: yes
+
 - name: Install CRI-O
   become: yes
-  apt:
-    name:
-      - cri-o
-    state: present
-    update_cache: yes
+  shell: |
+    cd /tmp/cri-o && bash ./install
+  args:
+    executable: /bin/bash
 
 - name: Enable and start CRI-O service
   become: yes
