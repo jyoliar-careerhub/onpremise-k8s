@@ -15,7 +15,8 @@ defaults
   timeout server 50s
   timeout tunnel 1h
 
-listen stats :{{haproxy_stats_port}}
+listen stats
+  bind :{{haproxy_stats_port}}
   mode http
   stats enable
   stats hide-version

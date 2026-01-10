@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ansible:*)",
+      "Bash(ssh:*)",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(ansible-inventory:*)",
+      "Bash(python3 -c:*)",
+      "Bash(ansible-playbook:*)"
     ]
   }
 }

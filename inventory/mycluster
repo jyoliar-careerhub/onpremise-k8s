@@ -10,36 +10,35 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ForwardAgent=yes -o Prox
 
 #DC1 virtualmachines
 [dc1-k8s-workers-vm]
-<hostname> ansible_host=<ip>
+worker1 ansible_host=10.0.25.104
+
+[dc1-k8s-workers-vm:vars]
+ansible_user=ubuntu
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyJump=ubuntu@ansible.jyo-liar.com'
+
 #DC1 baremetal
 [dc1-k8s-workers-bm]
-<hostname> ansible_host=<ip>
 
 [dc1-k8s-workers:children]
 dc1-k8s-workers-bm
 dc1-k8s-workers-vm
 
 [dc2-k8s-masters]
-<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers-vm]
-<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers-bm]
-<hostname> ansible_host=<ip>
 
 [dc2-k8s-workers:children]
 dc2-k8s-workers-bm
 dc2-k8s-workers-vm
 
 [dc3-k8s-masters]
-<hostname> ansible_host=<ip>
 
 [dc3-k8s-workers-vm]
-<hostname> ansible_host=<ip>
 
 [dc3-k8s-workers-bm]
-<hostname> ansible_host=<ip>
+
 
 [dc3-k8s-workers:children]
 dc3-k8s-workers-bm
@@ -121,7 +120,7 @@ setup=public
 encoded_secret="zm1J79tER3oeEIeQUWT6F1Vdq8Kzj/z54jqR8xj/RRE="
 
 # Container images: to be changed if using private container registry
-flannel_container_image=<container_registry>/flannel:v0.24.0
+flannel_version=v0.27.4
 kubeapi_server_container_image=<container_registry>/kube-apiserver:v1.35.0
 kubescheduler_container_image=<container_registry>/kube-scheduler:v1.35.0
 kubecontroller_manager_container_image=<container_registry>/kube-controller-manager:v1.35.0

@@ -1,5 +1,11 @@
+- name: Create /etc/kubernetes/pki directory
+  file:
+    path: /etc/kubernetes/pki
+    state: directory
+    mode: '0755'
+
 - name: "copy {{item}} to other masters"
-  copy: 
+  copy:
     src: /tmp/pki/{{item}}
     dest: /etc/kubernetes/pki/{{item}}
   with_items:
