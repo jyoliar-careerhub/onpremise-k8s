@@ -6,11 +6,12 @@
     src: enc-config.yaml.j2
     dest: /etc/kubernetes/pki/enc-config.yaml
 
-- name: Add runtime-config to kube-apiserver
+# Kubernetes 1.13+ 에서는 --encryption-provider-config 사용 (experimental 제거됨)
+- name: Add encryption-provider-config to kube-apiserver
   lineinfile:
     dest: /etc/kubernetes/manifests/kube-apiserver.yaml
-    regexp: '   - --experimental-encryption-provider-config=/etc/kubernetes/pki/enc-config.yaml'
-    line:   '    - --experimental-encryption-provider-config=/etc/kubernetes/pki/enc-config.yaml'
+    regexp: '--encryption-provider-config='
+    line: '    - --encryption-provider-config=/etc/kubernetes/pki/enc-config.yaml'
     insertbefore: '- --etcd-servers='
     backup: no
 
