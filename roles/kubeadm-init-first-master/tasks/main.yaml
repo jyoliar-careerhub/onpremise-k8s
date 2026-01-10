@@ -1,9 +1,31 @@
-- name: Kubeadm init
-  shell: kubeadm init --config=/tmp/kubeadm-ha/kubeadm-config.yaml
+- name: Kubeadm init with certificate upload
+  shell: kubeadm init --config=/tmp/kubeadm-ha/kubeadm-config.yaml --upload-certs
   register: rslt
 
 - name: Store init output
-  action: copy content="{{ rslt.stdout }}" dest="/etc/kubernetes/kubeadm-init.stdout"
+  copy:
+    content: "{{ rslt.stdout }}"
+    dest: /etc/kubernetes/kubeadm-init.stdout
+
+- name: Generate certificate key for control plane join
+  shell: kubeadm init phase upload-certs --upload-certs 2>&1 | tail -1
+  register: cert_key
+
+- name: Store certificate key
+  copy:
+    content: "{{ cert_key.stdout }}"
+    dest: /tmp/kubeadm-ha/certificate-key
+    mode: '0600'
+
+- name: Generate join command
+  shell: kubeadm token create --print-join-command
+  register: join_command
+
+- name: Store join command
+  copy:
+    content: "{{ join_command.stdout }}"
+    dest: /tmp/kubeadm-ha/join-command
+    mode: '0755'
 
 - name: Create .kube folder
   file:
@@ -23,16 +45,17 @@
 - name: Copy admin.conf to /tmp/kubeadm-ha/config
   copy:
     src: /etc/kubernetes/admin.conf
-    dest: "/tmp/kubeadm-ha/config"
+    dest: /tmp/kubeadm-ha/config
     remote_src: yes
 
-- name: "Fetching {{item}} from master0"
+- name: Fetch certificate key to controller
   fetch:
-    src: /etc/kubernetes/pki/{{item}}
-    dest: /tmp/pki/{{item}}
+    src: /tmp/kubeadm-ha/certificate-key
+    dest: /tmp/kubeadm-ha/certificate-key
     flat: yes
-  with_items:
-    - ca.crt
-    - ca.key
-    - sa.key
-    - sa.pub
+
+- name: Fetch join command to controller
+  fetch:
+    src: /tmp/kubeadm-ha/join-command
+    dest: /tmp/kubeadm-ha/join-command
+    flat: yes

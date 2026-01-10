@@ -1,8 +1,16 @@
+- name: Wait for API server to be ready
+  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config get nodes
+  register: result
+  until: result.rc == 0
+  retries: 10
+  delay: 10
+  ignore_errors: yes
+
 - name: Wait for all of the nodes to register
   shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config get nodes
   register: result
-  until: result.stdout.find("NotReady") == -1
-  retries: 20
+  until: result.rc == 0 and result.stdout.find("NotReady") == -1
+  retries: 30
   delay: 10
 
 - name: Copy smoke test manifest

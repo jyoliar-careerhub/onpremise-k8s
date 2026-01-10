@@ -121,6 +121,7 @@ encoded_secret="zm1J79tER3oeEIeQUWT6F1Vdq8Kzj/z54jqR8xj/RRE="
 
 # Container images: to be changed if using private container registry
 flannel_version=v0.27.4
+flannel_cni_plugin_version=v1.8.0-flannel1
 kubeapi_server_container_image=<container_registry>/kube-apiserver:v1.35.0
 kubescheduler_container_image=<container_registry>/kube-scheduler:v1.35.0
 kubecontroller_manager_container_image=<container_registry>/kube-controller-manager:v1.35.0

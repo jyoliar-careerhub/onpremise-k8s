@@ -145,9 +145,9 @@ spec:
       initContainers:
       - name: install-cni-plugin
 {% if setup == "private" %}
-        image: {{ container_registry }}/flannel-cni-plugin:v1.6.0-flannel1
+        image: {{ container_registry }}/flannel-cni-plugin:{{ flannel_cni_plugin_version | default('v1.5.1-flannel2') }}
 {% else %}
-        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.6.0-flannel1
+        image: ghcr.io/flannel-io/flannel-cni-plugin:{{ flannel_cni_plugin_version | default('v1.5.1-flannel2') }}
 {% endif %}
         command:
         - cp
