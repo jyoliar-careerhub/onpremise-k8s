@@ -8,9 +8,6 @@
   become: yes
   serial: 1
   roles:
-    - config-kube-apiserver 
+    - config-kube-apiserver
 
-- hosts: k8s-workers
-  become: yes
-  roles:
-    - config-kubelet
+# 워커 노드는 처음부터 HAProxy 경유로 join하므로 config-kubelet 불필요

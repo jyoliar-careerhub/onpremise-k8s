@@ -4,7 +4,8 @@
   delegate_to: "{{ groups['k8s-masters'][0] }}"
 
 - set_fact:
-    kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
+    # 마스터 IP를 localhost로 교체하여 처음부터 로컬 HAProxy 경유
+    kubeadm_join: "{{ kubeadm_join_cmd.stdout | regex_replace('[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:(\\d+)', 'localhost:' + ha_proxy_port|string) }}"
 
 - debug: var=kubeadm_join
 
