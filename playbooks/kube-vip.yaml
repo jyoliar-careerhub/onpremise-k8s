@@ -12,6 +12,10 @@
   hosts: k8s-masters
   become: true
   gather_facts: true
+  pre_tasks:
+    - name: AWS 환경이면 kube-vip 스킵
+      meta: end_play
+      when: infra_provider | default('baremetal') == 'aws'
   roles:
     - kube-vip
   tags:

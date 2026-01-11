@@ -146,31 +146,30 @@
     port: "10254"
     proto: tcp
 
-# HAProxy 포트 (HAProxy 사용 시에만)
-- name: Open HAProxy stats port
-  become: yes
-  ufw:
-    rule: allow
-    port: "{{ haproxy_stats_port }}"
-    proto: tcp
-  when: not (use_kube_vip | default(true))
+# HAProxy 포트 (레거시 - 현재 미사용)
+# infra_provider=baremetal은 kube-vip, infra_provider=aws는 NLB 사용
+# - name: Open HAProxy stats port
+#   become: yes
+#   ufw:
+#     rule: allow
+#     port: "{{ haproxy_stats_port }}"
+#     proto: tcp
+#
+# - name: Open HAProxy port
+#   become: yes
+#   ufw:
+#     rule: allow
+#     port: "{{ ha_proxy_port }}"
+#     proto: tcp
 
-- name: Open HAProxy port
-  become: yes
-  ufw:
-    rule: allow
-    port: "{{ ha_proxy_port }}"
-    proto: tcp
-  when: not (use_kube_vip | default(true))
-
-# kube-vip 포트
+# kube-vip 포트 (baremetal 환경에서만)
 - name: Open kube-vip Prometheus metrics port
   become: yes
   ufw:
     rule: allow
     port: "2112"
     proto: tcp
-  when: use_kube_vip | default(true)
+  when: infra_provider | default('baremetal') == 'baremetal'
 
 - name: Enable IP forwarding in ufw
   become: yes

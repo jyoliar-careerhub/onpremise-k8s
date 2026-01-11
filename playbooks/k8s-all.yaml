@@ -5,18 +5,16 @@
 - import_playbook: setup-ufw.yaml
 # - import_playbook: ha-etcd.yaml  # stacked etcd 사용 (kubeadm 자동 설치)
 
-# HA 방식 선택 (둘 중 하나만 활성화):
-# 옵션 1: kube-vip (권장) - Control Plane HA + Service LoadBalancer
-- import_playbook: kube-vip-pre-init.yaml
-# 옵션 2: HAProxy + Keepalived (레거시)
-# - import_playbook: setup-haproxy.yaml
+# HA 방식 선택 (infra_provider 변수에 따라 자동 분기):
+# - baremetal: kube-vip 사용 (ARP 모드)
+# - aws: AWS NLB 사용 (nlb_dns_name 필수)
+- import_playbook: aws-nlb-check.yaml      # AWS 환경일 때 NLB DNS 검증
+- import_playbook: kube-vip-pre-init.yaml  # baremetal 환경일 때만 실행
 
 - import_playbook: kubernetes-masters.yaml
 
-# kube-vip 사용 시: Cloud Controller 배포 (Service LoadBalancer 활성화)
+# kube-vip Cloud Controller 배포 (baremetal 환경일 때만)
 - import_playbook: kube-vip.yaml
-# HAProxy 사용 시: kubelet/kube-proxy 재설정
-# - import_playbook: config-k8s-for-haproxy.yaml
 
 - import_playbook: kubernetes-add-workers.yaml
 - import_playbook: encrypting-secrets.yaml

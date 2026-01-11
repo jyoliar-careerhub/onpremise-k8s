@@ -92,6 +92,14 @@ dc3-k8s-workers-vm
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_python_interpreter=/usr/bin/python3
 
+# 인프라 제공자 설정: baremetal 또는 aws
+# - baremetal: kube-vip 사용 (ARP 모드)
+# - aws: AWS NLB 사용 (nlb_dns_name 변수 필요)
+infra_provider=aws
+
+# AWS NLB 설정 (infra_provider=aws 일 때만 사용)
+nlb_dns_name=k8s.jyo-liar.com
+
 # CRI-O 버전
 crio_version=1.34
 
@@ -106,10 +114,7 @@ virtual_ip=10.54.235.61
 # change to your interface
 network_interface=eth0
 
-# HA 방식 선택: true=kube-vip, false=HAProxy+Keepalived
-use_kube_vip=true
-
-# kube-vip 설정
+# kube-vip 설정 (infra_provider=baremetal 일 때 사용)
 kube_vip_image=ghcr.io/kube-vip/kube-vip:v0.8.7
 kube_vip_arp_enabled=true
 kube_vip_lb_enabled=true

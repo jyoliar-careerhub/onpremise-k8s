@@ -10,6 +10,10 @@
   become: true
   gather_facts: true
   tasks:
+    - name: AWS 환경이면 kube-vip 스킵
+      meta: end_play
+      when: infra_provider | default('baremetal') == 'aws'
+
     - name: /etc/kubernetes/manifests 디렉토리 생성
       file:
         path: /etc/kubernetes/manifests
