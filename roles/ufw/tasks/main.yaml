@@ -146,12 +146,14 @@
     port: "10254"
     proto: tcp
 
+# HAProxy 포트 (HAProxy 사용 시에만)
 - name: Open HAProxy stats port
   become: yes
   ufw:
     rule: allow
     port: "{{ haproxy_stats_port }}"
     proto: tcp
+  when: not (use_kube_vip | default(true))
 
 - name: Open HAProxy port
   become: yes
@@ -159,6 +161,16 @@
     rule: allow
     port: "{{ ha_proxy_port }}"
     proto: tcp
+  when: not (use_kube_vip | default(true))
+
+# kube-vip 포트
+- name: Open kube-vip Prometheus metrics port
+  become: yes
+  ufw:
+    rule: allow
+    port: "2112"
+    proto: tcp
+  when: use_kube_vip | default(true)
 
 - name: Enable IP forwarding in ufw
   become: yes

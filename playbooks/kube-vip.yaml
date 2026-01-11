@@ -1,0 +1,18 @@
+---
+# kube-vip 배포 플레이북
+# Control Plane HA (VIP) + Service LoadBalancer 기능 제공
+#
+# 사용법:
+#   ansible-playbook -i inventory/mycluster playbooks/kube-vip.yaml
+#
+# 참고: kubeadm init 전에 static pod manifest만 배포하려면:
+#   ansible-playbook -i inventory/mycluster playbooks/kube-vip.yaml --tags kube-vip-static-pod
+
+- name: kube-vip 배포 (마스터 노드)
+  hosts: k8s-masters
+  become: true
+  gather_facts: true
+  roles:
+    - kube-vip
+  tags:
+    - kube-vip

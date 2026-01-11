@@ -4,10 +4,20 @@
 - import_playbook: kubeadm.yaml
 - import_playbook: setup-ufw.yaml
 # - import_playbook: ha-etcd.yaml  # stacked etcd 사용 (kubeadm 자동 설치)
-# - import_playbook: setup-haproxy.yaml # optional when no vip is used and when using haproxy
-- import_playbook: setup-haproxy.yaml
+
+# HA 방식 선택 (둘 중 하나만 활성화):
+# 옵션 1: kube-vip (권장) - Control Plane HA + Service LoadBalancer
+- import_playbook: kube-vip-pre-init.yaml
+# 옵션 2: HAProxy + Keepalived (레거시)
+# - import_playbook: setup-haproxy.yaml
+
 - import_playbook: kubernetes-masters.yaml
-- import_playbook: config-k8s-for-haproxy.yaml
+
+# kube-vip 사용 시: Cloud Controller 배포 (Service LoadBalancer 활성화)
+- import_playbook: kube-vip.yaml
+# HAProxy 사용 시: kubelet/kube-proxy 재설정
+# - import_playbook: config-k8s-for-haproxy.yaml
+
 - import_playbook: kubernetes-add-workers.yaml
 - import_playbook: encrypting-secrets.yaml
 - import_playbook: smoke-test.yaml

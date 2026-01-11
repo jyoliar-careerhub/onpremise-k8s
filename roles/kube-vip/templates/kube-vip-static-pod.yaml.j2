@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-vip
+  namespace: kube-system
+spec:
+  containers:
+  - args:
+    - manager
+    env:
+    # VIP 설정
+    - name: address
+      value: "{{ virtual_ip }}"
+    - name: vip_interface
+      value: "{{ network_interface | default('eth0') }}"
+    - name: vip_cidr
+      value: "32"
+    # ARP 모드 (Layer 2)
+    - name: vip_arp
+      value: "{{ kube_vip_arp_enabled | default('true') }}"
+{% if kube_vip_bgp_enabled | default(false) %}
+    # BGP 모드 (Layer 3)
+    - name: bgp_enable
+      value: "true"
+    - name: bgp_routerid
+      value: "{{ ansible_host }}"
+    - name: bgp_as
+      value: "{{ kube_vip_bgp_as | default('65000') }}"
+    - name: bgp_peers
+      value: "{{ kube_vip_bgp_peers | default('') }}"
+{% endif %}
+    # Control Plane 설정
+    - name: port
+      value: "6443"
+    - name: cp_enable
+      value: "true"
+    - name: cp_namespace
+      value: kube-system
+    # Leader Election (HA)
+    - name: vip_leaderelection
+      value: "true"
+    - name: vip_leasename
+      value: "plndr-cp-lock"
+    - name: vip_leaseduration
+      value: "{{ kube_vip_lease_duration | default('5') }}"
+    - name: vip_renewdeadline
+      value: "{{ kube_vip_renew_deadline | default('3') }}"
+    - name: vip_retryperiod
+      value: "{{ kube_vip_retry_period | default('1') }}"
+{% if kube_vip_lb_enabled | default(true) %}
+    # Service LoadBalancer 설정
+    - name: svc_enable
+      value: "true"
+    - name: svc_leasename
+      value: "plndr-svcs-lock"
+{% endif %}
+    # Prometheus 메트릭
+    - name: prometheus_server
+      value: ":2112"
+    # 추가 설정
+    - name: vip_ddns
+      value: "false"
+    image: {{ kube_vip_image | default('ghcr.io/kube-vip/kube-vip:v0.8.7') }}
+    imagePullPolicy: {{ image_pull_type | default('IfNotPresent') }}
+    name: kube-vip
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+  hostAliases:
+  - hostnames:
+    - kubernetes
+    ip: 127.0.0.1
+  hostNetwork: true
+  priorityClassName: system-node-critical
+  tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists

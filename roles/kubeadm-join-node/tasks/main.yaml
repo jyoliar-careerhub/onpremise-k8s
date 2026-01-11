@@ -3,9 +3,15 @@
   register: kubeadm_join_cmd
   delegate_to: "{{ groups['k8s-masters'][0] }}"
 
+# kube-vip 사용 시: VIP:6443 그대로 사용
+# HAProxy 사용 시: 마스터 IP를 localhost:ha_proxy_port로 교체
 - set_fact:
-    # 마스터 IP를 localhost로 교체하여 처음부터 로컬 HAProxy 경유
+    kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
+  when: use_kube_vip | default(true)
+
+- set_fact:
     kubeadm_join: "{{ kubeadm_join_cmd.stdout | regex_replace('[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:(\\d+)', 'localhost:' + ha_proxy_port|string) }}"
+  when: not (use_kube_vip | default(true))
 
 - debug: var=kubeadm_join
 

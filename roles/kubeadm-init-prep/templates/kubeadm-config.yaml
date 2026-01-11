@@ -1,7 +1,12 @@
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 kubernetesVersion: v{{ kubernetes_version }}.0
+# kube-vip 사용 시 VIP:6443, HAProxy 사용 시 첫 번째 마스터:ha_proxy_port
+{% if use_kube_vip | default(true) %}
+controlPlaneEndpoint: "{{ virtual_ip }}:6443"
+{% else %}
 controlPlaneEndpoint: "{{ hostvars[groups['k8s-masters'][0]]['ansible_host'] }}:{{ ha_proxy_port | default(6443) }}"
+{% endif %}
 networking:
   podSubnet: {{ pod_network_cidr }}
 apiServer:

@@ -1,0 +1,30 @@
+---
+# kubeadm init 전에 kube-vip static pod manifest만 배포
+# k8s-all.yaml에서 kubernetes-masters.yaml 전에 실행됨
+#
+# 참고: 클러스터 초기화 전에 VIP가 활성화되어야
+#       controlPlaneEndpoint로 VIP를 사용할 수 있음
+
+- name: kube-vip static pod manifest 배포 (pre-init)
+  hosts: k8s-masters
+  become: true
+  gather_facts: true
+  tasks:
+    - name: /etc/kubernetes/manifests 디렉토리 생성
+      file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: kube-vip static pod manifest 생성
+      template:
+        src: "../roles/kube-vip/templates/kube-vip-static-pod.yaml.j2"
+        dest: /etc/kubernetes/manifests/kube-vip.yaml
+        owner: root
+        group: root
+        mode: '0644'
+  tags:
+    - kube-vip
+    - kube-vip-pre-init
