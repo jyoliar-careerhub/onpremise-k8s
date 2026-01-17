@@ -48,6 +48,23 @@ ansible-playbook -i inventory/mycluster playbooks/cleanup-all-vms.yaml
 head -c 32 /dev/urandom | base64
 ```
 
+## 클러스터 접근
+
+특정 환경의 클러스터에 접근할 때:
+
+```bash
+kubectl <동사> [리소스] [-n <namespace>] --kubeconfig .kube/{환경명}.config
+```
+
+**중요**: `kubectl` 바로 뒤에 동사(get, apply, delete 등)를 먼저 위치시키고, 옵션들(`-n`, `--kubeconfig` 등)은 뒤에 배치합니다.
+
+```bash
+# 예시
+kubectl get nodes --kubeconfig .kube/{환경명}.config
+kubectl get pods -n kube-system --kubeconfig .kube/{환경명}.config
+kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
+```
+
 ## 아키텍처
 
 ### 설치 흐름 (k8s-all.yaml)

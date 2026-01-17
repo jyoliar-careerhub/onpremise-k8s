@@ -16,3 +16,7 @@
 
 - name: Run kubeadm join
   shell: "{{ kubeadm_join }} --ignore-preflight-errors=swap"
+
+- name: Label worker node
+  shell: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker= --overwrite
+  delegate_to: "{{ groups['k8s-masters'][0] }}"
