@@ -10,6 +10,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용성(HA) Kubernetes 멀티마스터 클러스터를 자동 구축하는 Ansible 기반 IaC(Infrastructure as Code) 프로젝트입니다.
 
+## 세션 시작 절차
+
+### 작업 환경 선택
+
+- 세션 시작 시 `inventory/` 경로의 인벤토리 파일을 확인하여 작업 환경을 질문합니다.
+- 인벤토리 파일명이 곧 환경명입니다 (예: `inventory/aws-ec2` → 환경명: `aws-ec2`).
+- 환경이 하나뿐일 경우 질문을 생략하고 해당 환경을 사용합니다.
+
+### kubeconfig 파일 관리
+
+- kubeconfig 파일은 `.kube/{환경명}.config` 경로에 위치합니다 (예: `.kube/aws-ec2.config`).
+- 쿠버네티스 구축 직후 또는 kubeconfig 파일이 존재하지 않는 경우:
+  - 해당 환경의 쿠버네티스 클러스터에서 `/etc/kubernetes/admin.conf` 파일을 `.kube/{환경명}.config`로 복제합니다.
+
 ## 작업 중 주의사항
 
 작업 중 이슈 발생 시, 원인의 파악 단계까지만 진행하고 조치 단계 이전에는 사용자의 작업 진행 허용을 요청하십시오.
