@@ -15,12 +15,18 @@
   file:
     path: /etc/apt/keyrings
     state: directory
-    mode: '0755'
+    mode: "0755"
 
-# CRI-O repository setup (OpenSUSE)
+# CRI-O repository setup (OpenSUSE US MirrorCache)
+- name: Clean CRI-O apt cache
+  shell: |
+    rm -f /etc/apt/keyrings/cri-o-apt-keyring.gpg
+    rm -f /var/lib/apt/lists/*cri-o*
+  when: setup=="public"
+
 - name: Add CRI-O GPG key
   shell: |
-    curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/Release.key | \
+    curl -fsSL {{ crio_repo_base_url | default('https://download.opensuse.org') }}/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/Release.key | \
     gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
   args:
     creates: /etc/apt/keyrings/cri-o-apt-keyring.gpg
@@ -28,7 +34,7 @@
 
 - name: Add CRI-O repository
   apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/ /"
+    repo: "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] {{ crio_repo_base_url | default('https://download.opensuse.org') }}/repositories/isv:/cri-o:/stable:/v{{ crio_version }}/deb/ /"
     state: present
     filename: cri-o
   when: setup=="public"

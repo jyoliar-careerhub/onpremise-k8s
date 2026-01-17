@@ -10,6 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용성(HA) Kubernetes 멀티마스터 클러스터를 자동 구축하는 Ansible 기반 IaC(Infrastructure as Code) 프로젝트입니다.
 
+## 작업 중 주의사항
+
+작업 중 이슈 발생 시, 원인의 파악 단계까지만 진행하고 조치 단계 이전에는 사용자의 작업 진행 허용을 요청하십시오.
+
 ## 주요 명령어
 
 ```bash
@@ -70,6 +74,7 @@ head -c 32 /dev/urandom | base64
 ### 역할(Roles) 구조
 
 Ansible 역할이 `roles/` 디렉토리에 위치하며, 각 역할은 표준 Ansible 구조를 따릅니다:
+
 - `tasks/main.yaml`: 태스크 정의
 - `templates/`: Jinja2 템플릿 (선택)
 - `handlers/`: 핸들러 정의 (선택)

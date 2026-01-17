@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(ansible:*)",
+      "Bash(ssh:*)",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(ansible-inventory:*)",
+      "Bash(python3 -c:*)",
+      "Bash(ansible-playbook:*)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git -C /Users/jyo/jyoliar-k8s status)",
+      "Bash(git -C /Users/jyo/jyoliar-k8s diff --name-only)",
+      "Bash(git -C /Users/jyo/jyoliar-k8s log --oneline -3)",
+      "Bash(git -C /Users/jyo/jyoliar-k8s add inventory/mycluster roles/flannel/templates/flannel.yaml.j2 roles/kubeadm-init-first-master/tasks/main.yaml roles/kubeadm-init-other-masters/tasks/main.yaml roles/smoke-test/tasks/main.yaml)",
+      "Bash(git -C /Users/jyo/jyoliar-k8s commit -m \"$\\(cat <<''EOF''\nStacked etcd 멀티마스터 클러스터 지원 및 flannel 이미지 버전 수정\n\n- kubeadm-init-other-masters: kubeadm init → kubeadm join --control-plane 변경\n- kubeadm-init-first-master: --upload-certs 옵션 추가 및 certificate-key 생성\n- flannel: CNI plugin 버전 변수화 \\(v1.8.0-flannel1\\)\n- smoke-test: API 서버 준비 대기 및 retry 로직 개선\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/jyo/jyoliar-k8s push origin master)",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh-add:*)"
+    ]
+  }
+}
