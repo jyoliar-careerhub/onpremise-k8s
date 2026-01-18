@@ -18,5 +18,5 @@
   shell: "{{ kubeadm_join }} --ignore-preflight-errors=swap"
 
 - name: Label worker node
-  shell: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker= --overwrite
+  shell: kubectl label node {{ ansible_hostname }} node-role.kubernetes.io/worker= --overwrite --kubeconfig /etc/kubernetes/admin.conf
   delegate_to: "{{ groups['k8s-masters'][0] }}"
