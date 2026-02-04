@@ -11,6 +11,12 @@
 
 - debug: var=kubeadm_join
 
+- name: Create /etc/kubernetes directory
+  file:
+    path: /etc/kubernetes
+    state: directory
+    mode: '0755'
+
 - name: Store join command
   action: copy content="{{ kubeadm_join }}" dest="/etc/kubernetes/kubeadm-join.command"
 
