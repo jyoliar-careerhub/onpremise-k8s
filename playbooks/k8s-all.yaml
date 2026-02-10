@@ -17,5 +17,6 @@
 - import_playbook: kube-vip.yaml
 
 - import_playbook: kubernetes-add-workers.yaml
+- import_playbook: longhorn-prep.yaml  # Longhorn 스토리지 노드 준비 (NVMe 디스크 마운트)
 - import_playbook: encrypting-secrets.yaml
 - import_playbook: smoke-test.yaml
