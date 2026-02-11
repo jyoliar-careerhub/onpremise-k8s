@@ -1,3 +1,5 @@
+ssh-add ~/.ssh/id_rsa
+
 ssh-keygen -R ansible.jyo-liar.com
 ssh-keygen -R 10.0.25.101
 ssh-keygen -R 10.0.25.102

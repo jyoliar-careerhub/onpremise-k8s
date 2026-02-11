@@ -20,6 +20,7 @@
       "Bash(git -C /Users/jyo/jyoliar-k8s push origin master)",
       "Bash(ssh-keygen:*)",
       "Bash(ssh-add:*)",
+      "Bash(./remove_known_hosts.sh)",
       "Bash(kubectl kustomize:*)",
       "Bash(kubectl get:*)",
       "Bash(kubectl describe:*)",
