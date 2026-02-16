@@ -1,5 +1,6 @@
 - import_playbook: repos.yaml
 - import_playbook: iptables.yaml
+- import_playbook: raspi-all.yaml  # Raspberry Pi 전용 설정 (cgroup memory 활성화, swap 비활성화)
 - import_playbook: ntpd.yaml
 - import_playbook: crio.yaml
 - import_playbook: kubeadm.yaml

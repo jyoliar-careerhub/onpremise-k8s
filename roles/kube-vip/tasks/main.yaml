@@ -39,7 +39,7 @@
     mode: '0644'
   when:
     - inventory_hostname == groups['k8s-masters'][0]
-    - kube_vip_lb_enabled | default(true)
+    - kube_vip_lb_enabled | default(true) | bool
   tags:
     - kube-vip
     - kube-vip-lb
@@ -50,7 +50,7 @@
   when:
     - inventory_hostname == groups['k8s-masters'][0]
     - super_admin_conf.stat.exists | default(false)
-    - kube_vip_lb_enabled | default(true)
+    - kube_vip_lb_enabled | default(true) | bool
   tags:
     - kube-vip
     - kube-vip-lb
@@ -61,7 +61,7 @@
   when:
     - inventory_hostname == groups['k8s-masters'][0]
     - super_admin_conf.stat.exists | default(false)
-    - kube_vip_lb_enabled | default(true)
+    - kube_vip_lb_enabled | default(true) | bool
   tags:
     - kube-vip
     - kube-vip-lb

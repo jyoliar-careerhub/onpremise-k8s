@@ -1,0 +1,34 @@
+---
+- name: Raspberry Pi cgroup memory 활성화
+  hosts: raspberrypi
+  become: yes
+  tasks:
+    - name: Read current cmdline.txt
+      slurp:
+        src: /boot/firmware/cmdline.txt
+      register: cmdline_raw
+
+    - name: Check if cgroup_memory is already set
+      set_fact:
+        cmdline_current: "{{ cmdline_raw.content | b64decode | trim }}"
+
+    - name: Add cgroup memory parameters
+      copy:
+        content: "{{ cmdline_current }} cgroup_memory=1 cgroup_enable=memory\n"
+        dest: /boot/firmware/cmdline.txt
+      when: "'cgroup_enable=memory' not in cmdline_current"
+      register: cmdline_changed
+
+    - name: Reboot to apply cgroup changes
+      reboot:
+        reboot_timeout: 300
+      when: cmdline_changed.changed | default(false)
+
+    - name: Verify memory cgroup is enabled
+      shell: cat /sys/fs/cgroup/cgroup.controllers
+      register: cgroup_check
+      changed_when: false
+
+    - name: Show cgroup controllers
+      debug:
+        msg: "Active controllers: {{ cgroup_check.stdout }}"

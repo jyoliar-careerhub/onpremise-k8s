@@ -84,6 +84,14 @@ dc3-k8s-workers-vm
 
 [new-k8s-workers]
 
+# Raspberry Pi 노드 (cgroup 등 Pi 전용 설정에 사용)
+[raspberrypi]
+raspberrypi-0
+raspberrypi-1
+raspberrypi-2
+raspberrypi-s0
+raspberrypi-s1
+
 
 #---- Variables -----
 

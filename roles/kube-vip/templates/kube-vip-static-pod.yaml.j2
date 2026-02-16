@@ -36,11 +36,11 @@ spec:
       value: "true"
     - name: cp_namespace
       value: kube-system
+    - name: kubernetes_addr
+      value: "{{ ansible_host }}:6443"
     # Leader Election (HA)
     - name: vip_leaderelection
       value: "true"
-    - name: vip_leasename
-      value: "plndr-cp-lock"
     - name: vip_leaseduration
       value: "{{ kube_vip_lease_duration | default('5') }}"
     - name: vip_renewdeadline
@@ -51,8 +51,6 @@ spec:
     # Service LoadBalancer 설정
     - name: svc_enable
       value: "true"
-    - name: svc_leasename
-      value: "plndr-svcs-lock"
 {% endif %}
     # Prometheus 메트릭
     - name: prometheus_server
@@ -61,7 +59,7 @@ spec:
     - name: vip_ddns
       value: "false"
     image: {{ kube_vip_image | default('ghcr.io/kube-vip/kube-vip:v0.8.7') }}
-    imagePullPolicy: {{ image_pull_type | default('IfNotPresent') }}
+    imagePullPolicy: {{ image_pull_type | default('IfNotPresent') | capitalize }}
     name: kube-vip
     resources:
       requests:
@@ -75,12 +73,19 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
-  hostAliases:
-  - hostnames:
-    - kubernetes
-    ip: 127.0.0.1
+        - SYS_TIME
+    volumeMounts:
+    - mountPath: /etc/kubernetes/admin.conf
+      name: kubeconfig
+      readOnly: true
   hostNetwork: true
   priorityClassName: system-node-critical
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/{% if inventory_hostname == groups['k8s-masters'][0] %}super-admin.conf{% else %}admin.conf{% endif %}
+
+      type: FileOrCreate
+    name: kubeconfig
   tolerations:
   - effect: NoSchedule
     operator: Exists
