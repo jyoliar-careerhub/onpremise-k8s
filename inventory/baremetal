@@ -1,0 +1,149 @@
+#DC1 masters
+[dc1-k8s-masters]
+raspberrypi-0 ansible_host=10.18.1.10 ansible_user=pi
+raspberrypi-1 ansible_host=10.18.1.11 ansible_user=pi
+raspberrypi-2 ansible_host=10.18.1.12 ansible_user=pi
+
+[dc1-k8s-masters:vars]
+network_interface=eth1
+
+#DC1 virtualmachines
+[dc1-k8s-workers-vm]
+
+#DC1 baremetal
+[dc1-k8s-workers-bm]
+raspberrypi-s0 ansible_host=10.18.2.10 ansible_user=pi network_interface=eth1
+raspberrypi-s1 ansible_host=10.18.2.11 ansible_user=pi network_interface=eth1
+ubuntu-notebook ansible_host=10.18.3.100 ansible_user=ubuntu network_interface=enp2s0
+
+[dc1-k8s-workers:children]
+dc1-k8s-workers-bm
+dc1-k8s-workers-vm
+
+[dc2-k8s-masters]
+
+[dc2-k8s-workers-vm]
+
+[dc2-k8s-workers-bm]
+
+[dc2-k8s-workers:children]
+dc2-k8s-workers-bm
+dc2-k8s-workers-vm
+
+[dc3-k8s-masters]
+
+[dc3-k8s-workers-vm]
+
+[dc3-k8s-workers-bm]
+
+
+[dc3-k8s-workers:children]
+dc3-k8s-workers-bm
+dc3-k8s-workers-vm
+
+[k8s-masters:children]
+dc1-k8s-masters
+dc2-k8s-masters
+dc3-k8s-masters
+
+[k8s-workers:children]
+dc1-k8s-workers
+dc2-k8s-workers
+dc3-k8s-workers
+new-k8s-workers
+
+[dc1-k8s-nodes:children]
+dc1-k8s-masters
+dc1-k8s-workers
+
+[dc2-k8s-nodes:children]
+dc2-k8s-masters
+dc2-k8s-workers
+
+[dc3-k8s-nodes:children]
+dc3-k8s-masters
+dc3-k8s-workers
+
+[k8s-nodes:children]
+dc1-k8s-nodes
+dc2-k8s-nodes
+dc3-k8s-nodes
+new-k8s-workers
+
+[k8s-workers-bm:children]
+dc1-k8s-workers-bm
+dc2-k8s-workers-bm
+dc3-k8s-workers-bm
+
+[k8s-workers-vm:children]
+dc1-k8s-workers-vm
+dc2-k8s-workers-vm
+dc3-k8s-workers-vm
+
+[new-k8s-masters]
+
+[new-k8s-workers]
+
+
+#---- Variables -----
+
+[all:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_python_interpreter=/usr/bin/python3
+
+# 인프라 제공자 설정: baremetal 또는 aws
+# - baremetal: kube-vip 사용 (ARP 모드)
+# - aws: AWS NLB 사용 (nlb_dns_name 변수 필요)
+infra_provider=baremetal
+
+# AWS NLB 설정 (infra_provider=aws 일 때만 사용)
+#nlb_dns_name=k8s.jyo-liar.com
+
+# CRI-O 버전
+crio_version=1.34
+crio_repo_base_url=https://download.opensuse.org
+
+# Kubernetes (k8s) vars...
+kubernetes_version=1.34
+kubelet_version=1.34.0-1.1
+kubeadm_version=1.34.0-1.1
+kubectl_version=1.34.0-1.1
+pod_network_cidr=10.244.0.0/16
+# VIP 설정 (kube-vip 또는 keepalived)
+virtual_ip=10.18.1.1
+# network_interface는 호스트/그룹별로 설정됨 (Pi: eth1, ubuntu-notebook: enp2s0)
+
+# kube-vip 설정 (infra_provider=baremetal 일 때 사용)
+kube_vip_image=ghcr.io/kube-vip/kube-vip:v0.8.7
+kube_vip_arp_enabled=true
+kube_vip_lb_enabled=true
+# Service LoadBalancer IP 범위 (CIDR 또는 Range 중 하나 선택)
+# kube_vip_lb_cidr=10.54.235.70/29
+kube_vip_lb_range=10.18.100.2-10.18.100.254
+
+smoke_test_node_port=31111
+kubelet_workers_eviction_hard=memory.available<10%
+kubelet_masters_eviction_hard=memory.available<10%
+etcd_version=v3.5.21
+proxy_port=6443
+image_pull_type=always
+# setup: public or private, put private to use private repo and public to use public repos
+setup=public
+encoded_secret="qZgWyJSxchIjmW2kNZ43i+qeovMq2cSxwzEltzlXbFE="
+
+# Container images: to be changed if using private container registry
+flannel_version=v0.27.4
+flannel_cni_plugin_version=v1.8.0-flannel1
+kubeapi_server_container_image=<container_registry>/kube-apiserver:v1.34.0
+kubescheduler_container_image=<container_registry>/kube-scheduler:v1.34.0
+kubecontroller_manager_container_image=<container_registry>/kube-controller-manager:v1.34.0
+kubeproxy_container_image=<container_registry>/kube-proxy:v1.34.0
+coredns_container_image=<container_registry>/coredns:v1.11.1
+kubepause_container_image=<container_registry>/pause:3.9
+
+# Optional, needed when using private registry
+container_registry=<container_registry>
+container_registry_username=<registry_user>
+container_registry_password=<registry_password>
+container_registry_email=<email>
+

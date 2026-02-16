@@ -135,10 +135,6 @@ smoke_test_node_port=31111
 kubelet_workers_eviction_hard=memory.available<10%
 kubelet_masters_eviction_hard=memory.available<10%
 etcd_version=v3.5.21
-haproxy_stats_port=9000
-ha_proxy_port=5446
-# haproxy port for etcd
-etcd_proxy_port=3379
 proxy_port=6443
 image_pull_type=always
 # setup: public or private, put private to use private repo and public to use public repos
@@ -148,11 +144,10 @@ encoded_secret="zm1J79tER3oeEIeQUWT6F1Vdq8Kzj/z54jqR8xj/RRE="
 # Container images: to be changed if using private container registry
 flannel_version=v0.27.4
 flannel_cni_plugin_version=v1.8.0-flannel1
-kubeapi_server_container_image=<container_registry>/kube-apiserver:v1.35.0
-kubescheduler_container_image=<container_registry>/kube-scheduler:v1.35.0
-kubecontroller_manager_container_image=<container_registry>/kube-controller-manager:v1.35.0
-kubeproxy_container_image=<container_registry>/kube-proxy:v1.35.0
-haproxy_container_image=<container_registry>/haproxy:2.8
+kubeapi_server_container_image=<container_registry>/kube-apiserver:v1.34.0
+kubescheduler_container_image=<container_registry>/kube-scheduler:v1.34.0
+kubecontroller_manager_container_image=<container_registry>/kube-controller-manager:v1.34.0
+kubeproxy_container_image=<container_registry>/kube-proxy:v1.34.0
 coredns_container_image=<container_registry>/coredns:v1.11.1
 kubepause_container_image=<container_registry>/pause:3.9
 

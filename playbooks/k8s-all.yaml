@@ -1,4 +1,5 @@
 - import_playbook: repos.yaml
+- import_playbook: iptables.yaml
 - import_playbook: ntpd.yaml
 - import_playbook: crio.yaml
 - import_playbook: kubeadm.yaml

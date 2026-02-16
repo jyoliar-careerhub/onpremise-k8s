@@ -1,0 +1,7 @@
+- hosts: k8s-nodes
+  become: yes
+  tasks:
+    - name: Install iptables
+      apt:
+        name: iptables
+        state: present
