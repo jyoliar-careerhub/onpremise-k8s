@@ -45,6 +45,10 @@ Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용�
 - SSH Agent에 키를 로드합니다 (Agent Forwarding 용)
 - 이전 서버의 SSH 호스트 키를 known_hosts에서 제거합니다
 
+## cleanup-all-vms 실행 시 주의
+
+`cleanup-all-vms.yaml` playbook은 모든 노드의 Kubernetes 데이터를 삭제하는 파괴적 작업입니다. 실행 전 **반드시 사용자에게 확인을 받고** 허가가 있을 때만 실행하세요.
+
 ## K8s 클러스터 구축 시 주의
 
 `k8s-all.yaml`을 한 번에 실행하지 마세요. 해당 파일을 읽고 포함된 playbook들을 **순차적으로 개별 실행**하세요. 각 단계 완료 후 결과를 확인하고 다음으로 진행합니다.
