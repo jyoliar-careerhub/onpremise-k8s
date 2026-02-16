@@ -1,4 +1,22 @@
 ---
+- name: Longhorn 필수 패키지 설치
+  hosts: k8s-nodes
+  become: yes
+  tasks:
+    - name: Install open-iscsi and nfs-common
+      apt:
+        name:
+          - open-iscsi
+          - nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Enable and start iscsid
+      systemd:
+        name: iscsid
+        enabled: yes
+        state: started
+
 - name: Longhorn 스토리지 노드 준비
   hosts: k8s-workers
   become: yes
