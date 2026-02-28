@@ -22,17 +22,20 @@
     state: started
     enabled: yes
 
-- name: Check Tailscale status
+- name: Check if Tailscale is logged in
   command: tailscale status
   register: ts_status
   changed_when: false
-  ignore_errors: yes
+  failed_when: false
 
-- name: Configure Tailscale as subnet router
+- name: Authenticate Tailscale
+  command: tailscale up --authkey={{ tailscale_auth_key }}
+  when: ts_status.rc != 0
+
+- name: Apply Tailscale subnet router configuration
   command: >
-    tailscale up
-    --authkey={{ tailscale_auth_key }}
+    tailscale set
     --advertise-routes={{ tailscale_advertise_routes }}
-    --snat-subnet-routes=false
+    --snat-subnet-routes=true
     --hostname={{ inventory_hostname }}
-  when: ts_status.rc != 0 or 'offline' in ts_status.stdout | default('')
+  changed_when: false
