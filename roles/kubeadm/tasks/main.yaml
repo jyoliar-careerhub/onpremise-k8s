@@ -1,11 +1,11 @@
-- name: Remove swapfile from /etc/fstab
-  mount:
-    name: swap
-    fstype: swap
+- name: Remove swap entries from /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '\sswap\s'
     state: absent
 
 - name: Turn swap off
-  shell: swapoff -a
+  command: swapoff -a
 
 # SELinux not used on Ubuntu (AppArmor is default, no action needed)
 
