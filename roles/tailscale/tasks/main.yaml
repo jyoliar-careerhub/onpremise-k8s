@@ -1,0 +1,38 @@
+- name: Set reverse path filter to loose mode for Tailscale
+  lineinfile:
+    path: /etc/sysctl.d/99-tailscale.conf
+    line: "{{ item }}"
+    state: present
+    create: yes
+  loop:
+    - 'net.ipv4.conf.all.rp_filter = 2'
+    - 'net.ipv4.conf.default.rp_filter = 2'
+
+- name: Apply sysctl settings
+  command: sysctl --system
+
+- name: Install Tailscale
+  shell: curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Enable and start tailscaled
+  systemd:
+    name: tailscaled
+    state: started
+    enabled: yes
+
+- name: Check Tailscale status
+  command: tailscale status
+  register: ts_status
+  changed_when: false
+  ignore_errors: yes
+
+- name: Configure Tailscale as subnet router
+  command: >
+    tailscale up
+    --authkey={{ tailscale_auth_key }}
+    --advertise-routes={{ tailscale_advertise_routes }}
+    --snat-subnet-routes=false
+    --hostname={{ inventory_hostname }}
+  when: ts_status.rc != 0 or 'offline' in ts_status.stdout | default('')

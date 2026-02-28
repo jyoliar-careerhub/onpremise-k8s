@@ -1,0 +1,13 @@
+[Unit]
+Description=Tailscale Subnet Router Health Check
+After=tailscaled.service
+Requires=tailscaled.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/tailscale-health-check.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

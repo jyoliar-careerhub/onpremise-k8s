@@ -1,0 +1,57 @@
+#!/bin/bash
+# Tailscale Subnet Router Health Check
+# CP 노드 간 연결을 확인하고, 장애 시 failover를 유도한다.
+
+GATEWAY="{{ tailscale_gateway }}"
+ADVERTISE_ROUTES="{{ tailscale_advertise_routes }}"
+MY_IP="{{ ansible_host }}"
+CHECK_INTERVAL=30
+FAIL_THRESHOLD=3
+FAIL_COUNT=0
+
+# 같은 그룹의 다른 CP 노드 IP 목록 (자기 자신 제외)
+{% set master_hosts = [] %}
+{% for host in groups['k8s-masters'] %}
+{% if hostvars[host]['ansible_host'] != ansible_host %}
+{% set _ = master_hosts.append(hostvars[host]['ansible_host']) %}
+{% endif %}
+{% endfor %}
+PEER_IPS=({{ master_hosts | join(' ') }})
+
+check_connectivity() {
+    # 게이트웨이 ping
+    if ! ping -c 1 -W 2 "$GATEWAY" > /dev/null 2>&1; then
+        return 1
+    fi
+
+    # 다른 CP 노드 중 하나라도 응답하면 OK
+    for peer in "${PEER_IPS[@]}"; do
+        if ping -c 1 -W 2 "$peer" > /dev/null 2>&1; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+while true; do
+    if check_connectivity; then
+        FAIL_COUNT=0
+    else
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        logger -t tailscale-health "Connectivity check failed ($FAIL_COUNT/$FAIL_THRESHOLD)"
+    fi
+
+    if [ "$FAIL_COUNT" -ge "$FAIL_THRESHOLD" ]; then
+        logger -t tailscale-health "Threshold reached. Restarting Tailscale to trigger failover."
+        tailscale down
+        sleep 30
+        tailscale up \
+            --advertise-routes="$ADVERTISE_ROUTES" \
+            --snat-subnet-routes=false \
+            --hostname="{{ inventory_hostname }}"
+        FAIL_COUNT=0
+    fi
+
+    sleep "$CHECK_INTERVAL"
+done

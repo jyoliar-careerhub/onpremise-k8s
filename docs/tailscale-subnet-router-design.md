@@ -241,9 +241,42 @@ sudo tailscale up \
 | | 해당 노드 장애 시 K8s + VPN 동시 영향 |
 | | K8s 노드의 리소스 공유 |
 
-**비권장** — K8s 노드와 네트워크 인프라의 관심사가 혼재됨.
+**단독 사용 시 비권장** — K8s 노드와 네트워크 인프라의 관심사가 혼재되며, 단일 노드 장애 시 K8s + VPN 동시 영향.
 
-#### 권장: 방안 A (공유기) > 방안 B (전용 Pi)
+#### 방안 D: CP 노드 HA Subnet Router (3중 이중화)
+
+방안 C의 단점("해당 노드 장애 시 K8s + VPN 동시 영향")을 **CP 노드 3대 전체에 Tailscale을 설치**하여 해결하는 방안이다. 소프트 라우터(전용 장치)를 구할 수 없는 상황에서의 현실적 대안.
+
+```
+[자택 LAN: 10.18.0.0/16]
+
+  Pi5-0 (10.18.1.10) ── Tailscale SR ──┐
+  Pi5-1 (10.18.1.11) ── Tailscale SR ──┼── tailnet (동일 route 광고)
+  Pi5-2 (10.18.1.12) ── Tailscale SR ──┘
+       모두 --advertise-routes=10.18.0.0/16
+
+  Tailscale이 자동으로 Primary 선택
+  Primary 장애 시 자동 failover (15~75초)
+```
+
+| 장점 | 단점 |
+|------|------|
+| 추가 장치 불필요 | K8s CP 노드에 Tailscale 설치됨 |
+| 3중 HA로 SPOF 제거 | CP 노드 리소스 공유 (미미) |
+| Tailscale 자동 failover | failover 시간 15~75초 |
+| Ansible로 자동화 가능 | Auth key 90일 만료 관리 필요 |
+
+**방안 C와의 핵심 차이:**
+- 방안 C는 1대만 SR → 해당 노드 장애 시 VPN 단절 (SPOF)
+- 방안 D는 3대 모두 SR → 어떤 1대가 장애나도 나머지 2대가 failover
+- CP 노드가 이미 3중 HA (etcd quorum)이므로, 1대 장애 시 K8s도 정상 운영
+
+**적용 조건:**
+- 소프트 라우터/전용 Pi를 확보할 수 없는 경우
+- CP 노드가 3대 이상으로 HA 구성된 경우
+- `k8s-all.yaml`에 포함하지 않고 별도 playbook으로 관리
+
+#### 권장: 방안 A (공유기) > 방안 B (전용 Pi) > 방안 D (CP 노드 HA)
 
 공유기를 커스텀할 수 있으므로 방안 A가 가장 단순. 공유기 성능이 부족하면 방안 B로 전환.
 

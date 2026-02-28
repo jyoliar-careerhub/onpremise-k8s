@@ -1,0 +1,17 @@
+- name: Deploy Tailscale health check script
+  template:
+    src: tailscale-health-check.sh.j2
+    dest: /usr/local/bin/tailscale-health-check.sh
+    mode: '0755'
+
+- name: Deploy Tailscale health check service
+  template:
+    src: tailscale-health-check.service.j2
+    dest: /etc/systemd/system/tailscale-health-check.service
+
+- name: Enable and start health check service
+  systemd:
+    name: tailscale-health-check
+    state: started
+    enabled: yes
+    daemon_reload: yes

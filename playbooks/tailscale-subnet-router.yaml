@@ -1,0 +1,5 @@
+- hosts: k8s-masters
+  become: yes
+  roles:
+    - tailscale
+    # - tailscale-health-check  # TODO: 검증 후 활성화 (잘못된 판단으로 tailscale down 위험)
