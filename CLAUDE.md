@@ -8,14 +8,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용성(HA) Kubernetes 멀티마스터 클러스터를 자동 구축하는 Ansible 기반 IaC(Infrastructure as Code) 프로젝트입니다.
+Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용성(HA) Kubernetes 멀티마스터 클러스터와 Tailscale VPN을 자동 구축하는 Ansible 기반 IaC(Infrastructure as Code) 프로젝트입니다.
+
+## 워크스페이스 구조
+
+프로젝트는 두 개의 독립된 Ansible 워크스페이스로 구성됩니다:
+
+```
+kubernetes/   # K8s 클러스터 구축 (roles, playbooks, inventory, ansible.cfg)
+vpn/          # Tailscale Subnet Router 설정 (roles, playbooks, inventory, ansible.cfg)
+```
+
+각 워크스페이스는 자체 `ansible.cfg`를 포함하며, 해당 디렉토리에서 Ansible 명령을 실행해야 합니다.
 
 ## 세션 시작 절차
 
-### 작업 환경 선택
+### 워크스페이스 및 환경 선택
 
-- 세션 시작 시 `inventory/` 경로의 인벤토리 파일을 확인하여 작업 환경을 질문합니다.
-- 인벤토리 파일명이 곧 환경명입니다 (예: `inventory/aws-ec2` → 환경명: `aws-ec2`).
+- 세션 시작 시 작업 대상 워크스페이스(`kubernetes` 또는 `vpn`)를 확인합니다.
+- 각 워크스페이스의 `inventory/` 경로에서 인벤토리 파일을 확인하여 작업 환경을 질문합니다.
+- 인벤토리 파일명이 곧 환경명입니다 (예: `kubernetes/inventory/aws-ec2` → 환경명: `aws-ec2`).
 - 환경이 하나뿐일 경우 질문을 생략하고 해당 환경을 사용합니다.
 
 ### kubeconfig 파일 관리
@@ -55,7 +67,11 @@ Ubuntu 24.04 LTS 환경에서 다중 데이터센터를 지원하는 고가용�
 
 ## 주요 명령어
 
+### Kubernetes 워크스페이스
+
 ```bash
+cd kubernetes
+
 # 전체 클러스터 설치 (비권장 - 순차 개별 실행 권장)
 ansible-playbook -i inventory/mycluster playbooks/k8s-all.yaml
 
@@ -71,6 +87,18 @@ ansible-playbook -i inventory/mycluster playbooks/cleanup-all-vms.yaml
 
 # 시크릿 암호화 키 생성
 head -c 32 /dev/urandom | base64
+```
+
+### VPN 워크스페이스
+
+```bash
+cd vpn
+
+# Tailscale Subnet Router 배포
+ansible-playbook -i inventory/baremetal playbooks/tailscale-subnet-router.yaml
+
+# 연결 테스트
+ansible -m ping all -i inventory/baremetal
 ```
 
 ## 클러스터 접근
@@ -92,7 +120,7 @@ kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
 
 ## 아키텍처
 
-### 설치 흐름 (k8s-all.yaml)
+### Kubernetes 설치 흐름 (k8s-all.yaml)
 
 1. **저장소 설정**: repos.yaml (apt 저장소 구성)
 2. **시간 동기화**: ntpd.yaml (chrony 사용)
@@ -105,7 +133,7 @@ kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
 9. **재구성 및 보안**: config-k8s-for-haproxy.yaml → encrypting-secrets.yaml
 10. **검증**: smoke-test.yaml
 
-### 인벤토리 구조
+### Kubernetes 인벤토리 구조
 
 ```
 [dc{N}-k8s-masters]     # 각 데이터센터의 마스터 노드
@@ -117,7 +145,13 @@ kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
 [new-k8s-workers]       # 새로 추가할 워커 노드
 ```
 
-### 주요 설정 변수 (inventory/mycluster)
+### VPN 인벤토리 구조
+
+```
+[subnet-routers]        # Tailscale Subnet Router 노드 (CP 노드 3대, HA 구성)
+```
+
+### 주요 설정 변수 (kubernetes/inventory)
 
 - `crio_version`: CRI-O 버전 (예: 1.35)
 - `kubernetes_version`: Kubernetes 버전 (예: 1.35)
@@ -127,16 +161,22 @@ kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
 - `setup`: `public` 또는 `private` (프라이빗 레지스트리 사용 여부)
 - `encoded_secret`: 시크릿 암호화 키 (Base64)
 
+### 주요 설정 변수 (vpn/inventory)
+
+- `tailscale_auth_key`: Tailscale 인증 키
+- `tailscale_advertise_routes`: Subnet Router가 광고할 CIDR
+- `tailscale_gateway`: 게이트웨이 IP
+
 ### 역할(Roles) 구조
 
-Ansible 역할이 `roles/` 디렉토리에 위치하며, 각 역할은 표준 Ansible 구조를 따릅니다:
+Ansible 역할은 각 워크스페이스의 `roles/` 디렉토리에 위치하며, 표준 Ansible 구조를 따릅니다:
 
 - `tasks/main.yaml`: 태스크 정의
 - `templates/`: Jinja2 템플릿 (선택)
 - `handlers/`: 핸들러 정의 (선택)
 - `files/`: 정적 파일 (선택)
 
-### 주요 역할
+### Kubernetes 주요 역할
 
 - `repos`: apt 저장소 설정 (CRI-O, Kubernetes)
 - `crio`: CRI-O 컨테이너 런타임 설치
@@ -146,3 +186,8 @@ Ansible 역할이 `roles/` 디렉토리에 위치하며, 각 역할은 표준 An
 - `etcd-ha`: HA etcd 클러스터 구성
 - `haproxy`: API 서버 로드밸런싱
 - `keepalived`: VIP 관리
+
+### VPN 주요 역할
+
+- `tailscale`: Tailscale 설치 및 Subnet Router 구성 (SNAT=true)
+- `tailscale-health-check`: SR health check 스크립트 및 systemd 서비스
