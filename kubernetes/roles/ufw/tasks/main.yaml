@@ -60,7 +60,7 @@
     rule: allow
     port: "2379:2380"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open kubelet API port
   become: yes
@@ -68,7 +68,7 @@
     rule: allow
     port: "10250"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open kube-scheduler port
   become: yes
@@ -76,7 +76,7 @@
     rule: allow
     port: "10251"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open kube-controller-manager port
   become: yes
@@ -84,7 +84,7 @@
     rule: allow
     port: "10252"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open CoreDNS ports
   become: yes
@@ -92,7 +92,7 @@
     rule: allow
     port: "10053"
     proto: "{{ item }}"
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
   loop:
     - tcp
     - udp
@@ -103,7 +103,7 @@
     rule: allow
     port: "10255"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open Flannel VXLAN port
   become: yes
@@ -111,7 +111,7 @@
     rule: allow
     port: "8472"
     proto: udp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open Flannel UDP port
   become: yes
@@ -119,7 +119,7 @@
     rule: allow
     port: "8285"
     proto: udp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open metrics port
   become: yes
@@ -127,7 +127,7 @@
     rule: allow
     port: "9898"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open Node Exporter port
   become: yes
@@ -135,7 +135,7 @@
     rule: allow
     port: "9100"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open DNS ports
   become: yes
@@ -143,7 +143,7 @@
     rule: allow
     port: "53"
     proto: "{{ item }}"
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
   loop:
     - tcp
     - udp
@@ -154,7 +154,7 @@
     rule: allow
     port: "4194"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Open Ingress controller port
   become: yes
@@ -162,7 +162,7 @@
     rule: allow
     port: "10254"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 # HAProxy 포트 (레거시 - 현재 미사용)
 # infra_provider=baremetal은 kube-vip, infra_provider=aws는 NLB 사용
@@ -188,7 +188,7 @@
     rule: allow
     port: "2112"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
   when: infra_provider | default('baremetal') == 'baremetal'
 
 - name: Open iperf3 port
@@ -198,7 +198,7 @@
     rule: allow
     port: "5201"
     proto: tcp
-    from_ip: "{{ internal_network_cidr }}"
+    # from_ip: "{{ internal_network_cidr }}"
 
 - name: Enable IP forwarding in ufw
   become: yes

@@ -83,6 +83,7 @@ dc3-k8s-workers-vm
 [new-k8s-masters]
 
 [new-k8s-workers]
+#aws-ec2-worker01 ansible_host=10.0.10.100 ansible_user=ubuntu
 
 # Raspberry Pi 노드 (cgroup 등 Pi 전용 설정에 사용)
 [raspberrypi]

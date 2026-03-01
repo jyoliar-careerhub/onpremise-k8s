@@ -10,3 +10,4 @@ ansible_python_interpreter=/usr/bin/python3
 # Tailscale Subnet Router 설정
 tailscale_auth_key=tskey-auth-knZDa58jk411CNTRL-4gBKLJSBFrHiYbD5ViVcqH3GGq9s289pL
 tailscale_advertise_routes=10.0.0.0/16
+cross_site_cidr=10.18.0.0/16
