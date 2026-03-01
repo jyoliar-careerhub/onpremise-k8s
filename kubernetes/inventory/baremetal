@@ -156,8 +156,4 @@ container_registry_username=<registry_user>
 container_registry_password=<registry_password>
 container_registry_email=<email>
 
-# Tailscale Subnet Router 설정 (CP 노드 HA)
-tailscale_auth_key=tskey-auth-knZDa58jk411CNTRL-4gBKLJSBFrHiYbD5ViVcqH3GGq9s289pL
-tailscale_advertise_routes=10.18.0.0/16
-tailscale_gateway=10.18.0.1
 

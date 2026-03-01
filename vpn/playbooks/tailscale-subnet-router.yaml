@@ -1,4 +1,4 @@
-- hosts: k8s-masters
+- hosts: subnet-routers
   become: yes
   roles:
     - tailscale
