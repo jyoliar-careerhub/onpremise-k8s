@@ -100,7 +100,8 @@ data:
       "Network": "{{ pod_network_cidr }}",
       "EnableNFTables": false,
       "Backend": {
-        "Type": "vxlan"
+        "Type": "vxlan",
+        "MTU": 1390
       }
     }
 ---

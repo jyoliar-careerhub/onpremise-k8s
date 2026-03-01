@@ -3,6 +3,11 @@ raspberrypi-0 ansible_host=10.18.1.10 ansible_user=pi
 raspberrypi-1 ansible_host=10.18.1.11 ansible_user=pi
 raspberrypi-2 ansible_host=10.18.1.12 ansible_user=pi
 
+[k8s-nodes]
+raspberrypi-s0 ansible_host=10.18.2.10 ansible_user=pi
+raspberrypi-s1 ansible_host=10.18.2.11 ansible_user=pi
+ubuntu-notebook ansible_host=10.18.3.100 ansible_user=ubuntu
+
 #---- Variables -----
 
 [all:vars]

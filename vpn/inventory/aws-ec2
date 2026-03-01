@@ -1,6 +1,9 @@
 [subnet-routers]
 tailscale-router ansible_host=43.200.118.146 ansible_user=ubuntu
 
+[k8s-nodes]
+aws-ec2-worker00 ansible_host=10.0.10.100 ansible_user=ubuntu
+
 #---- Variables -----
 
 [all:vars]

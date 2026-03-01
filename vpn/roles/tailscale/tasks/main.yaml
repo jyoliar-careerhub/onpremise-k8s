@@ -38,13 +38,27 @@
   changed_when: ip_rule_add.rc == 0
   failed_when: ip_rule_add.rc != 0 and 'File exists' not in ip_rule_add.stderr
 
-- name: Persist protective ip rule across reboots
+- name: Create systemd service to persist protective ip rule across reboots
   copy:
-    dest: /etc/networkd-dispatcher/routable.d/49-protect-local-route.sh
-    mode: '0755'
+    dest: /etc/systemd/system/tailscale-ip-rule.service
     content: |
-      #!/bin/bash
-      ip rule add to {{ tailscale_advertise_routes }} lookup main priority 5269 2>/dev/null || true
+      [Unit]
+      Description=Add protective ip rule for Tailscale accept-routes
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=-/usr/sbin/ip rule add to {{ tailscale_advertise_routes }} lookup main priority 5269
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable tailscale-ip-rule service
+  systemd:
+    name: tailscale-ip-rule
+    enabled: yes
+    daemon_reload: yes
 
 - name: Apply Tailscale subnet router configuration
   command: >

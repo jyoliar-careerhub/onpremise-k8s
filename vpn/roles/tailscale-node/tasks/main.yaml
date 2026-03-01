@@ -1,0 +1,68 @@
+- name: Set reverse path filter to loose mode for Tailscale
+  lineinfile:
+    path: /etc/sysctl.d/99-tailscale.conf
+    line: "{{ item }}"
+    state: present
+    create: yes
+  loop:
+    - 'net.ipv4.conf.all.rp_filter = 2'
+    - 'net.ipv4.conf.default.rp_filter = 2'
+
+- name: Apply sysctl settings
+  command: sysctl --system
+
+- name: Install Tailscale
+  shell: curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Enable and start tailscaled
+  systemd:
+    name: tailscaled
+    state: started
+    enabled: yes
+
+- name: Check if Tailscale is logged in
+  command: tailscale status
+  register: ts_status
+  changed_when: false
+  failed_when: false
+
+- name: Authenticate Tailscale
+  command: tailscale up --authkey={{ tailscale_auth_key }}
+  when: ts_status.rc != 0
+
+- name: Add protective ip rule to prevent accept-routes from overriding local subnet
+  command: ip rule add to {{ tailscale_advertise_routes }} lookup main priority 5269
+  register: ip_rule_add
+  changed_when: ip_rule_add.rc == 0
+  failed_when: ip_rule_add.rc != 0 and 'File exists' not in ip_rule_add.stderr
+
+- name: Create systemd service to persist protective ip rule across reboots
+  copy:
+    dest: /etc/systemd/system/tailscale-ip-rule.service
+    content: |
+      [Unit]
+      Description=Add protective ip rule for Tailscale accept-routes
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=-/usr/sbin/ip rule add to {{ tailscale_advertise_routes }} lookup main priority 5269
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable tailscale-ip-rule service
+  systemd:
+    name: tailscale-ip-rule
+    enabled: yes
+    daemon_reload: yes
+
+- name: Apply Tailscale node configuration (accept-routes only)
+  command: >
+    tailscale set
+    --accept-routes
+    --hostname={{ inventory_hostname }}
+  changed_when: false
