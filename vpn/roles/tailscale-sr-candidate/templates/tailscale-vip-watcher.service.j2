@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch kube-vip VIP and auto-promote/demote Tailscale SR
+After=tailscaled.service
+Requires=tailscaled.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/tailscale-vip-watcher.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

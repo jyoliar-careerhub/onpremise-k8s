@@ -77,3 +77,21 @@
     src: demote-to-node.sh.j2
     dest: /usr/local/bin/demote-to-node.sh
     mode: '0755'
+
+- name: Deploy VIP watcher script
+  template:
+    src: tailscale-vip-watcher.sh.j2
+    dest: /usr/local/bin/tailscale-vip-watcher.sh
+    mode: '0755'
+
+- name: Deploy VIP watcher systemd service
+  template:
+    src: tailscale-vip-watcher.service.j2
+    dest: /etc/systemd/system/tailscale-vip-watcher.service
+
+- name: Enable and start VIP watcher service
+  systemd:
+    name: tailscale-vip-watcher
+    state: started
+    enabled: yes
+    daemon_reload: yes

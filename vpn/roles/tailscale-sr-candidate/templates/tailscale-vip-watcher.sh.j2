@@ -1,0 +1,32 @@
+#!/bin/bash
+# kube-vip VIP 이동 감지 → Tailscale SR 자동 승격/강등
+set -euo pipefail
+
+VIP="{{ virtual_ip }}"
+IFACE="{{ network_interface }}"
+PROMOTE_SCRIPT="/usr/local/bin/promote-to-sr.sh"
+DEMOTE_SCRIPT="/usr/local/bin/demote-to-node.sh"
+
+log() { logger -t tailscale-vip-watcher "$*"; echo "$*"; }
+
+# 시작 시 현재 상태 동기화
+if ip addr show dev "$IFACE" | grep -q "${VIP}/"; then
+    log "시작: VIP 감지됨 → SR 승격"
+    "$PROMOTE_SCRIPT"
+else
+    log "시작: VIP 없음 → SR 강등"
+    "$DEMOTE_SCRIPT"
+fi
+
+# ip monitor로 VIP 변경 이벤트 감시
+ip monitor address dev "$IFACE" | while read -r line; do
+    if echo "$line" | grep -q "${VIP}/"; then
+        if echo "$line" | grep -q "^Deleted"; then
+            log "VIP 제거됨 → SR 강등"
+            "$DEMOTE_SCRIPT"
+        else
+            log "VIP 추가됨 → SR 승격"
+            "$PROMOTE_SCRIPT"
+        fi
+    fi
+done
