@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "=== Subnet Router 강등 ==="
+echo "[1/2] SR 설정 제거..."
+tailscale set \
+  --advertise-routes= \
+  --accept-routes=false
+echo "  완료."
+
+echo "[2/2] 상태 확인..."
+tailscale status
+echo ""
+echo "참고: 보호 ip rule(priority 5269)은 유지됩니다."

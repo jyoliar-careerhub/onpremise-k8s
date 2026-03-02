@@ -1,0 +1,62 @@
+- hosts: k8s-nodes
+  become: yes
+  tasks:
+    - name: Logout from Tailscale (remove from Tailnet)
+      command: tailscale logout
+      register: ts_logout
+      changed_when: ts_logout.rc == 0
+      failed_when: false
+
+    - name: Stop tailscaled service
+      systemd:
+        name: tailscaled
+        state: stopped
+        enabled: no
+      failed_when: false
+
+    - name: Purge tailscale packages
+      apt:
+        name:
+          - tailscale
+          - tailscaled
+        state: absent
+        purge: yes
+      failed_when: false
+
+    - name: Remove Tailscale apt repository
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /usr/share/keyrings/tailscale-archive-keyring.gpg
+        - /etc/apt/sources.list.d/tailscale.list
+
+    - name: Stop and disable tailscale-ip-rule service
+      systemd:
+        name: tailscale-ip-rule
+        state: stopped
+        enabled: no
+      failed_when: false
+
+    - name: Remove tailscale-ip-rule systemd service file
+      file:
+        path: /etc/systemd/system/tailscale-ip-rule.service
+        state: absent
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Remove sysctl configuration
+      file:
+        path: /etc/sysctl.d/99-tailscale.conf
+        state: absent
+
+    - name: Apply sysctl settings
+      command: sysctl --system
+
+    - name: Remove protective ip rule
+      command: ip rule del to {{ tailscale_advertise_routes }} lookup main priority 5269
+      register: ip_rule_del
+      changed_when: ip_rule_del.rc == 0
+      failed_when: false

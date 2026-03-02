@@ -60,9 +60,20 @@
     enabled: yes
     daemon_reload: yes
 
-- name: Apply Tailscale node configuration (accept-routes only)
+- name: Set Tailscale hostname only (no SR config)
   command: >
     tailscale set
-    --accept-routes
     --hostname={{ inventory_hostname }}
   changed_when: false
+
+- name: Deploy promote-to-sr.sh script
+  template:
+    src: promote-to-sr.sh.j2
+    dest: /usr/local/bin/promote-to-sr.sh
+    mode: '0755'
+
+- name: Deploy demote-to-node.sh script
+  template:
+    src: demote-to-node.sh.j2
+    dest: /usr/local/bin/demote-to-node.sh
+    mode: '0755'

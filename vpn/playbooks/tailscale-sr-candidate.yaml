@@ -1,0 +1,4 @@
+- hosts: sr-candidates
+  become: yes
+  roles:
+    - tailscale-sr-candidate

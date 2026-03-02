@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+
+ADVERTISE_ROUTES="{{ tailscale_advertise_routes }}"
+
+echo "=== Subnet Router 승격 ==="
+echo "[1/2] SR 설정 적용..."
+tailscale set \
+  --advertise-routes="${ADVERTISE_ROUTES}" \
+  --accept-routes \
+  --snat-subnet-routes=true
+echo "  완료."
+
+echo "[2/2] 상태 확인..."
+tailscale status
+echo ""
+echo "중요: 공유기 정적 경로를 이 노드 IP($(hostname -I | awk '{print $1}'))로 변경하세요."
