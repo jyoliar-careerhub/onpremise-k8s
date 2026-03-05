@@ -58,7 +58,7 @@
   become: yes
   ufw:
     rule: allow
-    port: "2379:2380"
+    port: "2379:2381"
     proto: tcp
     # from_ip: "{{ internal_network_cidr }}"
 
@@ -70,19 +70,27 @@
     proto: tcp
     # from_ip: "{{ internal_network_cidr }}"
 
-- name: Open kube-scheduler port
+- name: Open kube-proxy metrics port
   become: yes
   ufw:
     rule: allow
-    port: "10251"
+    port: "10249"
     proto: tcp
     # from_ip: "{{ internal_network_cidr }}"
 
-- name: Open kube-controller-manager port
+- name: Open kube-scheduler metrics port
   become: yes
   ufw:
     rule: allow
-    port: "10252"
+    port: "10259"
+    proto: tcp
+    # from_ip: "{{ internal_network_cidr }}"
+
+- name: Open kube-controller-manager metrics port
+  become: yes
+  ufw:
+    rule: allow
+    port: "10257"
     proto: tcp
     # from_ip: "{{ internal_network_cidr }}"
 

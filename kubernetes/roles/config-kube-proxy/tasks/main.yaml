@@ -6,6 +6,13 @@
     regexp: 'server:.*'
     replace: "server: https://localhost:{{ha_proxy_port}}"
     backup: no
+
+- name: Set metricsBindAddress to 0.0.0.0
+  replace:
+    path: /tmp/kube-proxy-cm.yaml
+    regexp: 'metricsBindAddress: ""'
+    replace: 'metricsBindAddress: "0.0.0.0:10249"'
+    backup: no
   
  
 - name: Apply the change to the config map

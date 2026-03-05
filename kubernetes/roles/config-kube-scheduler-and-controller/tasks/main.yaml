@@ -2,8 +2,8 @@
   become: yes
   replace: 
     path: "{{item}}"
-    regexp: '--address=127.0.0.1'
-    replace: '--address=0.0.0.0'
+    regexp: '--bind-address=127.0.0.1'
+    replace: '--bind-address=0.0.0.0'
   with_items:
     - /etc/kubernetes/controller-manager.conf
     - /etc/kubernetes/scheduler.conf

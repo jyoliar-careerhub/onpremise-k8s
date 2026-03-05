@@ -23,6 +23,10 @@ apiServer:
 {% endfor %}
   - localhost
   - 127.0.0.1
+etcd:
+  local:
+    extraArgs:
+      listen-metrics-urls: "http://0.0.0.0:2381"
 {% if setup == "private" and container_registry is defined %}
 imageRepository: {{ container_registry }}
 {% endif %}

@@ -26,6 +26,7 @@ ExecStart=/usr/local/bin/etcd --name ${PEER_NAME} \
     --peer-key-file=/etc/kubernetes/pki/etcd/peer-key.pem \
     --peer-client-cert-auth \
     --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.pem \
+    --listen-metrics-urls=http://0.0.0.0:2381 \
     --initial-cluster {{initial_cluster }} --initial-cluster-token my-etcd-token \
     --initial-cluster-state new
 
