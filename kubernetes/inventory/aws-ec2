@@ -140,6 +140,7 @@ image_pull_type=always
 # setup: public or private, put private to use private repo and public to use public repos
 setup=public
 encoded_secret="zm1J79tER3oeEIeQUWT6F1Vdq8Kzj/z54jqR8xj/RRE="
+service_account_issuer=https://kubernetes.default.svc.cluster.local
 
 # Container images: to be changed if using private container registry
 flannel_version=v0.27.4

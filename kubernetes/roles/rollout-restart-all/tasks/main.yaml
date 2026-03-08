@@ -1,0 +1,75 @@
+# kube-proxy, flannel 우선 restart (ClusterIP/Pod 네트워킹 복구)
+- name: Rollout restart kube-proxy
+  shell: >
+    kubectl rollout restart daemonset kube-proxy -n kube-system
+    --kubeconfig /etc/kubernetes/admin.conf
+
+- name: Wait for kube-proxy rollout
+  shell: >
+    kubectl rollout status daemonset kube-proxy -n kube-system
+    --kubeconfig /etc/kubernetes/admin.conf --timeout=120s
+
+- name: Rollout restart kube-flannel
+  shell: >
+    kubectl rollout restart daemonset kube-flannel-ds -n kube-flannel
+    --kubeconfig /etc/kubernetes/admin.conf
+  failed_when: false
+
+- name: Wait for flannel rollout
+  shell: >
+    kubectl rollout status daemonset kube-flannel-ds -n kube-flannel
+    --kubeconfig /etc/kubernetes/admin.conf --timeout=120s
+  failed_when: false
+
+- name: Rollout restart coredns
+  shell: >
+    kubectl rollout restart deploy coredns -n kube-system
+    --kubeconfig /etc/kubernetes/admin.conf
+
+# 나머지 전체 workload restart
+- name: List all Deployments (except kube-system, kube-flannel)
+  shell: >
+    kubectl get deploy -A --no-headers
+    --kubeconfig /etc/kubernetes/admin.conf
+    -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name'
+    | grep -v kube-system | grep -v kube-flannel
+  register: all_deploys
+  changed_when: false
+
+- name: Rollout restart all Deployments
+  shell: >
+    kubectl rollout restart deploy {{ item.split()[1] }} -n {{ item.split()[0] }}
+    --kubeconfig /etc/kubernetes/admin.conf
+  loop: "{{ all_deploys.stdout_lines | default([]) }}"
+  failed_when: false
+
+- name: List all StatefulSets
+  shell: >
+    kubectl get sts -A --no-headers
+    --kubeconfig /etc/kubernetes/admin.conf
+    -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name'
+  register: all_sts
+  changed_when: false
+
+- name: Rollout restart all StatefulSets
+  shell: >
+    kubectl rollout restart sts {{ item.split()[1] }} -n {{ item.split()[0] }}
+    --kubeconfig /etc/kubernetes/admin.conf
+  loop: "{{ all_sts.stdout_lines | default([]) }}"
+  failed_when: false
+
+- name: List all DaemonSets (except already restarted)
+  shell: >
+    kubectl get ds -A --no-headers
+    --kubeconfig /etc/kubernetes/admin.conf
+    -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name'
+    | grep -v kube-system | grep -v kube-flannel
+  register: all_ds
+  changed_when: false
+
+- name: Rollout restart remaining DaemonSets
+  shell: >
+    kubectl rollout restart ds {{ item.split()[1] }} -n {{ item.split()[0] }}
+    --kubeconfig /etc/kubernetes/admin.conf
+  loop: "{{ all_ds.stdout_lines | default([]) }}"
+  failed_when: false

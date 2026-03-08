@@ -1,0 +1,12 @@
+# Phase 1: 마스터 노드에 service-account-issuer 롤링 적용
+- hosts: k8s-masters
+  become: yes
+  serial: 1
+  roles:
+    - config-oidc-issuer
+
+# Phase 2: issuer 변경 시 기존 SA 토큰이 Unauthorized 되므로 전체 workload restart
+- hosts: k8s-masters[0]
+  become: yes
+  roles:
+    - rollout-restart-all
