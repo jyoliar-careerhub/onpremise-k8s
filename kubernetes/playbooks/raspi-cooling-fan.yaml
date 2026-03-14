@@ -1,0 +1,74 @@
+---
+# Play 1: 설정 적용 + kubelet 상태로 동적 그룹 분류
+- name: Raspberry Pi 5 쿨링팬 4단계 속도 제어 설정
+  hosts: raspberrypi
+  become: yes
+  tasks:
+    - name: 쿨링팬 4단계 PWM 설정 추가
+      blockinfile:
+        path: /boot/firmware/config.txt
+        insertafter: "^\\[all\\]"
+        marker: "# {mark} ANSIBLE MANAGED - RPi5 cooling fan"
+        block: |
+          # Stage 0: 45°C — 저속
+          dtparam=fan_temp0=45000
+          dtparam=fan_temp0_hyst=5000
+          dtparam=fan_temp0_speed=75
+          # Stage 1: 50°C — 중속
+          dtparam=fan_temp1=50000
+          dtparam=fan_temp1_hyst=5000
+          dtparam=fan_temp1_speed=125
+          # Stage 2: 55°C — 고속
+          dtparam=fan_temp2=55000
+          dtparam=fan_temp2_hyst=5000
+          dtparam=fan_temp2_speed=175
+          # Stage 3: 60°C — 최대
+          dtparam=fan_temp3=60000
+          dtparam=fan_temp3_hyst=5000
+          dtparam=fan_temp3_speed=250
+      register: fan_config_changed
+
+    - name: kubelet 실행 상태 확인
+      command: systemctl is-active kubelet
+      register: kubelet_status
+      changed_when: false
+      failed_when: false
+
+    - name: kubelet 상태별 동적 그룹 분류
+      group_by:
+        key: "fan_kubelet_{{ 'active' if kubelet_status.rc == 0 else 'inactive' }}"
+
+# Play 2: kubelet 실행 중 — 순차 재시작 (클러스터 보호)
+- name: kubelet 활성 노드 순차 재시작
+  hosts: fan_kubelet_active
+  become: yes
+  serial: 1
+  tasks:
+    - name: Reboot to apply cooling fan settings
+      reboot:
+        reboot_timeout: 300
+      when: hostvars[inventory_hostname].fan_config_changed.changed
+
+# Play 3: kubelet 미실행 — 일괄 재시작
+- name: kubelet 비활성 노드 일괄 재시작
+  hosts: fan_kubelet_inactive
+  become: yes
+  tasks:
+    - name: Reboot to apply cooling fan settings
+      reboot:
+        reboot_timeout: 300
+      when: hostvars[inventory_hostname].fan_config_changed.changed
+
+# Play 4: 적용 확인
+- name: 쿨링팬 설정 적용 확인
+  hosts: raspberrypi
+  become: yes
+  tasks:
+    - name: 현재 CPU 온도 확인
+      shell: vcgencmd measure_temp
+      register: cpu_temp
+      changed_when: false
+
+    - name: CPU 온도 출력
+      debug:
+        msg: "{{ inventory_hostname }}: {{ cpu_temp.stdout }}"

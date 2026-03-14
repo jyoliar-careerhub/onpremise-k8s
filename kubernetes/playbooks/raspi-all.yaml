@@ -1,2 +1,3 @@
 - import_playbook: raspi-cgroup-memory.yaml
+- import_playbook: raspi-cooling-fan.yaml
 - import_playbook: raspi-disable-swap.yaml
