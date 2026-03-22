@@ -7,3 +7,5 @@
     - ufw
     - kubeadm
     - kubeadm-join-node
+    - longhorn-prereqs
+    - longhorn-storage
