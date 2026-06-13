@@ -1,0 +1,12 @@
+---
+# 신규 노드 부트스트랩: ansible_user 에 passwordless sudo(NOPASSWD) 설치.
+# become 자체가 sudo 권한을 요구하므로, 이 role 은 최초 1회 -K(--ask-become-pass)로 실행한다.
+# 이후 모든 playbook 은 -K 없이 무인 실행된다.
+- name: Install passwordless sudo drop-in for {{ ansible_user }}
+  copy:
+    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL\n"
+    dest: "/etc/sudoers.d/010_{{ ansible_user }}-nopasswd"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'   # 임시파일을 visudo로 검증, 통과 시에만 설치 (sudo 잠금 방지)

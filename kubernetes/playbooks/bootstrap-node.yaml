@@ -1,0 +1,7 @@
+# 신규 노드 부트스트랩 (최초 1회, -K 로 실행)
+#   ansible-playbook -i inventory/baremetal playbooks/bootstrap-node.yaml --limit <신규노드> -K
+# passwordless sudo 설치 후 raspi-all.yaml / add-new-workers-all.yaml 은 -K 없이 진행 가능.
+- hosts: new-k8s-workers
+  become: yes
+  roles:
+    - bootstrap-sudo

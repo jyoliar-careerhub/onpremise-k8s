@@ -57,6 +57,26 @@ vpn/          # Tailscale Subnet Router 설정 (roles, playbooks, inventory, ans
 - SSH Agent에 키를 로드합니다 (Agent Forwarding 용)
 - 이전 서버의 SSH 호스트 키를 known_hosts에서 제거합니다
 
+## 신규 노드 추가 시 필수 부트스트랩 (NOPASSWD sudo)
+
+신규 노드는 `ansible_user`에 passwordless sudo(NOPASSWD)가 설정되어 있어야 모든 playbook이 무인(`become: yes`)으로 실행됩니다. 기존 클러스터 노드에는 이미 적용되어 있으나(`/etc/sudoers.d/010_<user>-nopasswd`), **새로 추가하는 노드에는 빠져 있어** 그대로 playbook을 돌리면 첫 태스크(Gathering Facts)에서 `Missing sudo password`로 실패합니다.
+
+`ansible.cfg`에는 `become_ask_pass`가 설정되어 있지 않으므로(무인 운영 전제), 신규 노드는 **다른 작업보다 먼저** 부트스트랩 playbook을 1회 실행해 NOPASSWD를 설치해야 합니다. 이 단계만 `-K`(`--ask-become-pass`)가 필요하며, 이후 단계는 모두 무인입니다.
+
+```bash
+cd kubernetes
+
+# 신규 노드를 인벤토리 [new-k8s-workers] 그룹에 등록한 뒤, 최초 1회만 -K 로 실행
+ansible-playbook -i inventory/baremetal playbooks/bootstrap-node.yaml --limit <신규노드> -K
+
+# 이후 Pi 사전작업 / 워커 추가는 -K 없이 무인 진행
+ansible-playbook -i inventory/baremetal playbooks/raspi-all.yaml --limit <신규노드>   # Pi 전용
+ansible-playbook -i inventory/baremetal playbooks/add-new-workers-all.yaml
+```
+
+- `bootstrap-node.yaml` → `bootstrap-sudo` role: `copy ... validate: 'visudo -cf %s'`로 임시파일을 검증한 뒤에만 `/etc/sudoers.d/010_<ansible_user>-nopasswd`를 설치하므로 sudoers 문법 오류로 인한 sudo 잠금 사고를 방지합니다.
+- 노드에서 수동 설정도 가능합니다: `echo '<user> ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/010_<user>-nopasswd && sudo chmod 0440 /etc/sudoers.d/010_<user>-nopasswd && sudo visudo -c`
+
 ## cleanup-all-vms 실행 시 주의
 
 `cleanup-all-vms.yaml` playbook은 모든 노드의 Kubernetes 데이터를 삭제하는 파괴적 작업입니다. 실행 전 **반드시 사용자에게 확인을 받고** 허가가 있을 때만 실행하세요.
