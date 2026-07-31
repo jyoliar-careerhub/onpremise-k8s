@@ -1,17 +1,59 @@
+# k8s 패치 업그레이드 (kubeadm 공식 절차)
+#
+# 대상 버전은 인벤토리의 kubernetes_full_version / kubeadm_version / kubelet_version / kubectl_version이 정한다.
+#
+# 순서:
+#   1) 첫 마스터: kubeadm upgrade apply
+#   2) 나머지 마스터·워커: kubeadm upgrade node (순차)
+#   3) 전 노드 순차: drain → kubelet/kubectl 업그레이드 → Ready 대기 → uncordon
+#
+# 전제: 커스텀 설정은 ClusterConfiguration 선언으로 관리된다 (ops-workflow#27) —
+#   upgrade apply가 kubeadm-config ConfigMap 기준으로 매니페스트를 재생성하므로,
+#   선언 밖에서 매니페스트를 직접 수정하지 않는다. 선언 변경은 kubeadm-reconfigure.yaml로.
+
 - hosts: k8s-masters[0]
-  become: yes
+  become: true
   vars:
-    upgrade_version: v1.9.6
-    kubeadm_version: latest
-  ignore_errors: yes
+    kubeadm_upgrade_mode: apply
   roles:
     - kubeadm-upgrade
 
-- hosts: all
+- hosts: k8s-nodes
   serial: 1
-  become: yes
+  become: true
   vars:
-    kubelet_version: latest
+    kubeadm_upgrade_mode: node
+  pre_tasks:
+    - name: Skip first master (already upgraded via apply)
+      meta: end_host
+      when: inventory_hostname == groups['k8s-masters'][0]
+
+    - name: Check node is joined to the cluster
+      shell: kubectl --kubeconfig=/etc/kubernetes/admin.conf get node {{ inventory_hostname }}
+      delegate_to: "{{ groups['k8s-masters'][0] }}"
+      register: node_joined
+      failed_when: false
+      changed_when: false
+
+    - name: Skip hosts not joined to the cluster (e.g. 인벤토리에만 있는 예비 노드)
+      meta: end_host
+      when: node_joined.rc != 0
+  roles:
+    - kubeadm-upgrade
+
+- hosts: k8s-nodes
+  serial: 1
+  become: true
+  pre_tasks:
+    - name: Check node is joined to the cluster
+      shell: kubectl --kubeconfig=/etc/kubernetes/admin.conf get node {{ inventory_hostname }}
+      delegate_to: "{{ groups['k8s-masters'][0] }}"
+      register: node_joined
+      failed_when: false
+      changed_when: false
+
+    - name: Skip hosts not joined to the cluster
+      meta: end_host
+      when: node_joined.rc != 0
   roles:
     - update-kubelet
-
