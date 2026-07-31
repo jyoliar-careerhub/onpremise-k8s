@@ -20,5 +20,7 @@
 
 - import_playbook: kubernetes-add-workers.yaml
 - import_playbook: longhorn-prep.yaml  # Longhorn 스토리지 노드 준비 (NVMe 디스크 마운트)
-- import_playbook: encrypting-secrets.yaml
+- import_playbook: encrypting-secrets.yaml  # enc-config.yaml 파일 배포만 수행
+# Secret 암호화 활성화(신규 구축): 위 배포 후 인벤토리 apiserver_encryption_enabled=true 로 바꾸고 실행
+# - import_playbook: kubeadm-reconfigure.yaml
 - import_playbook: smoke-test.yaml

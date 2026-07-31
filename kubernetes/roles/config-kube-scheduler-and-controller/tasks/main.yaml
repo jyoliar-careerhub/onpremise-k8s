@@ -1,28 +1,21 @@
-- name: change k8s scheduler and controller config
-  become: yes
-  replace: 
-    path: "{{item}}"
-    regexp: '--bind-address=127.0.0.1'
-    replace: '--bind-address=0.0.0.0'
-  with_items:
-    - /etc/kubernetes/controller-manager.conf
-    - /etc/kubernetes/scheduler.conf
-    - /etc/kubernetes/manifests/kube-scheduler.yaml
-    - /etc/kubernetes/manifests/kube-controller-manager.yaml
-
-- replace:
-    path: "{{item}}"
+# scheduler/controller-manager의 kubeconfig(server 주소)를 HAProxy 경유로 재작성한다.
+# bind-address=0.0.0.0 은 더 이상 여기서 매니페스트를 고치지 않는다 —
+# ClusterConfiguration 선언(kubeadm-init-prep 템플릿 + kubeadm-reconfigure.yaml)으로 반영된다 (ops-workflow#27).
+- name: Point scheduler/controller/kubelet kubeconfigs at HAProxy
+  become: true
+  replace:
+    path: "{{ item }}"
     regexp: 'server:.*'
-    replace: "server: https://localhost:{{ha_proxy_port}}"
-    backup: no
+    replace: "server: https://localhost:{{ ha_proxy_port }}"
+    backup: false
   with_items:
     - /etc/kubernetes/scheduler.conf
     - /etc/kubernetes/controller-manager.conf
     - /etc/kubernetes/kubelet.conf
-    
+
 - name: restart kubelet
-  systemd: 
-    name: kubelet 
+  systemd:
+    name: kubelet
     state: restarted
-    daemon_reload: yes
-    enabled: yes
+    daemon_reload: true
+    enabled: true

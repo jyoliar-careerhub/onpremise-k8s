@@ -1,23 +1,10 @@
-- name: Backup kube-apiserver.yaml
-  shell: cp /etc/kubernetes/manifests/kube-apiserver.yaml /tmp/kube-apiserver.yaml.$(date +%Y%m%d%H%M%S)
-  
+# Secret 암호화 설정 파일 배포만 담당한다.
+# apiserver 반영은 매니페스트 직접 패치가 아니라 ClusterConfiguration 선언으로 한다 (ops-workflow#27):
+#   ① 이 롤로 enc-config.yaml 배포
+#   ② 인벤토리 apiserver_encryption_enabled=true 설정
+#   ③ playbooks/kubeadm-reconfigure.yaml 실행
 - name: copy encryption config file
   template:
     src: enc-config.yaml.j2
     dest: /etc/kubernetes/pki/enc-config.yaml
-
-# Kubernetes 1.13+ 에서는 --encryption-provider-config 사용 (experimental 제거됨)
-- name: Add encryption-provider-config to kube-apiserver
-  lineinfile:
-    dest: /etc/kubernetes/manifests/kube-apiserver.yaml
-    regexp: '--encryption-provider-config='
-    line: '    - --encryption-provider-config=/etc/kubernetes/pki/enc-config.yaml'
-    insertbefore: '- --etcd-servers='
-    backup: no
-
-- name: restart kubelet
-  systemd: 
-    name: kubelet 
-    enabled: yes 
-    daemon_reload: yes
-    state: started
+    mode: "0600"
