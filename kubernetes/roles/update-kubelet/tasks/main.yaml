@@ -1,33 +1,50 @@
 - name: Drain node
-  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+  shell: kubectl --kubeconfig=/etc/kubernetes/admin.conf drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
   delegate_to: "{{ groups['k8s-masters'][0] }}"
 
-- name: Unhold kubelet package
-  become: yes
+- name: Unhold kubelet and kubectl packages
+  become: true
   dpkg_selections:
-    name: kubelet
+    name: "{{ item }}"
     selection: install
+  loop:
+    - kubelet
+    - kubectl
 
-- name: Upgrade kubelet
-  become: yes
+- name: Upgrade kubelet and kubectl
+  become: true
   apt:
-    name: kubelet={{ kubelet_version }}
+    name:
+      - kubelet={{ kubelet_version }}
+      - kubectl={{ kubectl_version }}
     state: present
-    update_cache: yes
+    update_cache: true
 
-- name: Hold kubelet package again
-  become: yes
+- name: Hold kubelet and kubectl packages again
+  become: true
   dpkg_selections:
-    name: kubelet
+    name: "{{ item }}"
     selection: hold
+  loop:
+    - kubelet
+    - kubectl
 
 - name: Restart kubelet
   systemd:
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
     name: kubelet
-    enabled: yes
+    enabled: true
+
+- name: Wait for node to be Ready
+  shell: kubectl --kubeconfig=/etc/kubernetes/admin.conf get node {{ inventory_hostname }} --no-headers
+  delegate_to: "{{ groups['k8s-masters'][0] }}"
+  register: node_status
+  until: "'NotReady' not in node_status.stdout and 'Ready' in node_status.stdout"
+  retries: 30
+  delay: 10
+  changed_when: false
 
 - name: Bring the host back online
-  shell: kubectl --kubeconfig=/tmp/kubeadm-ha/config uncordon {{ inventory_hostname }}
+  shell: kubectl --kubeconfig=/etc/kubernetes/admin.conf uncordon {{ inventory_hostname }}
   delegate_to: "{{ groups['k8s-masters'][0] }}"

@@ -1,6 +1,6 @@
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
-kubernetesVersion: v{{ kubernetes_version }}.0
+kubernetesVersion: v{{ kubernetes_full_version }}
 # infra_provider에 따른 controlPlaneEndpoint 설정:
 # - baremetal: kube-vip VIP 사용
 # - aws: AWS NLB DNS 사용
@@ -47,6 +47,9 @@ etcd:
     extraArgs:
     - name: listen-metrics-urls
       value: "http://0.0.0.0:2381"
+    # extensive: etcdGRPCRequestsSlow 알럿의 원천(grpc_server_handling_seconds_*) 노출 (ops-workflow#25 코멘트 요청)
+    - name: metrics
+      value: extensive
 {% if setup == "private" and container_registry is defined %}
 imageRepository: {{ container_registry }}
 {% endif %}
@@ -54,6 +57,11 @@ imageRepository: {{ container_registry }}
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 serverTLSBootstrap: true
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+# 0.0.0.0: Prometheus 스크레이핑용 (기본 127.0.0.1 — 기존 config-kube-proxy 롤의 post-init 패치를 선언으로 대체)
+metricsBindAddress: "0.0.0.0:10249"
 ---
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration

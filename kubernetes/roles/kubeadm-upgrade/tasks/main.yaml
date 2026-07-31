@@ -1,32 +1,45 @@
+# kubeadm 패키지 업그레이드 후 kubeadm upgrade 수행
+# kubeadm_upgrade_mode:
+#   - apply: 첫 마스터 — 컨트롤 플레인 전체 업그레이드 (kubeadm-config ConfigMap 기준으로 매니페스트 재생성)
+#   - node:  나머지 마스터·워커 — 로컬 설정(kubelet config 등) 갱신
+
 - name: Unhold kubeadm package
-  become: yes
+  become: true
   dpkg_selections:
     name: kubeadm
     selection: install
 
 - name: Upgrade kubeadm
-  become: yes
+  become: true
   apt:
     name: kubeadm={{ kubeadm_version }}
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Hold kubeadm package again
-  become: yes
+  become: true
   dpkg_selections:
     name: kubeadm
     selection: hold
 
-- name: Install pexpect
-  become: yes
-  apt:
-    name: python3-pexpect
-    state: present
+- name: Run kubeadm upgrade plan
+  become: true
+  command: kubeadm upgrade plan v{{ kubernetes_full_version }}
+  register: upgrade_plan
+  changed_when: false
+  when: kubeadm_upgrade_mode == 'apply'
 
-- name: Run kubeadm upgrade
-  expect:
-    command: kubeadm upgrade apply {{ upgrade_version }}
-    echo: yes
-    timeout: 250
-    responses:
-      upgrade?: "y"
+- name: Show upgrade plan
+  debug:
+    var: upgrade_plan.stdout_lines
+  when: kubeadm_upgrade_mode == 'apply'
+
+- name: Run kubeadm upgrade apply
+  become: true
+  command: kubeadm upgrade apply v{{ kubernetes_full_version }} --yes
+  when: kubeadm_upgrade_mode == 'apply'
+
+- name: Run kubeadm upgrade node
+  become: true
+  command: kubeadm upgrade node
+  when: kubeadm_upgrade_mode == 'node'
