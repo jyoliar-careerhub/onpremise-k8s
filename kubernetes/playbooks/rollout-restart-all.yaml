@@ -1,0 +1,9 @@
+# 전체 워크로드 롤링 재시작.
+# service-account-issuer 변경 후에는 기존 SA 토큰이 Unauthorized가 되므로 필수다.
+# issuer 변경 절차: 인벤토리 service_account_issuer 수정
+#   → kubeadm-reconfigure.yaml 실행 (ClusterConfiguration 선언 경유 — ops-workflow#27)
+#   → 이 playbook 실행
+- hosts: k8s-masters[0]
+  become: true
+  roles:
+    - rollout-restart-all

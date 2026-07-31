@@ -1,0 +1,145 @@
+# kubeadm 재구성 — 템플릿(kubeadm-init-prep/templates/kubeadm-config.yaml)이 유일한 진실이다:
+#   렌더링 → kubeadm config validate → upload-config(kubeadm-config ConfigMap 갱신, defaulting은 kubeadm이)
+#   → 마스터 1대씩 컴포넌트별 실체화(kubeadm init phase) → 헬스 확인
+# 공식 절차: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/
+#
+# 컴포넌트 재시작이 수반된다 — serial: 1 로 마스터 1대씩 진행해 가용성을 유지한다.
+# etcd 주의: 2번째 이후 마스터는 join 이력 인자(--initial-cluster-state 등)가 단일 멤버 형태로
+#   재생성되지만, 데이터 디렉터리가 초기화된 멤버에서 etcd는 --initial-* 인자를 무시하므로 무해하다
+#   (kubeadm upgrade의 재생성과 동일한 동작).
+#
+# 실행 예:
+#   ansible-playbook -i inventory/baremetal playbooks/kubeadm-reconfigure.yaml -e kubeadm_reconfigure_dry_run=true
+#   ansible-playbook -i inventory/baremetal playbooks/kubeadm-reconfigure.yaml
+#   (--limit 'k8s-masters[0]' 등으로 쪼개어 단계 확인하며 진행 가능)
+
+- hosts: k8s-masters
+  become: true
+  serial: 1
+  vars:
+    kubeadm_reconfigure_config: /etc/kubernetes/kubeadm-reconfigure.yaml
+    dry_run: "{{ kubeadm_reconfigure_dry_run | default(false) | bool }}"
+  tasks:
+    - name: Render kubeadm config from template
+      template:
+        src: ../roles/kubeadm-init-prep/templates/kubeadm-config.yaml
+        dest: "{{ kubeadm_reconfigure_config }}"
+        mode: "0600"
+
+    - name: Validate rendered config
+      command: kubeadm config validate --config {{ kubeadm_reconfigure_config }}
+      changed_when: false
+
+    # ---- ConfigMap 갱신 (첫 마스터에서 1회 — 클러스터 전역 선언) ----
+
+    # phase 단독 --dry-run은 --kubeconfig를 무시하고 dry-run 디렉터리 안의 admin.conf만 찾는다
+    # (전체 init --dry-run에서는 앞 단계가 만들어 주는 파일) — 디렉터리를 지정하고 직접 넣어준다
+    - name: Prepare dry-run directory with admin.conf
+      shell: mkdir -p /tmp/kubeadm-reconfigure-dryrun && cp /etc/kubernetes/admin.conf /tmp/kubeadm-reconfigure-dryrun/admin.conf
+      when: inventory_hostname == groups['k8s-masters'][0] and dry_run
+
+    - name: Upload ClusterConfiguration to kubeadm-config ConfigMap (dry-run)
+      command: kubeadm init phase upload-config kubeadm --config {{ kubeadm_reconfigure_config }} --dry-run
+      environment:
+        KUBEADM_INIT_DRYRUN_DIR: /tmp/kubeadm-reconfigure-dryrun
+      register: upload_dry
+      changed_when: false
+      when: inventory_hostname == groups['k8s-masters'][0] and dry_run
+
+    - name: Show upload-config dry-run result
+      debug:
+        var: upload_dry.stdout_lines
+      when: inventory_hostname == groups['k8s-masters'][0] and dry_run
+
+    - name: Upload ClusterConfiguration to kubeadm-config ConfigMap
+      command: kubeadm init phase upload-config kubeadm --config {{ kubeadm_reconfigure_config }} --kubeconfig /etc/kubernetes/admin.conf
+      when: inventory_hostname == groups['k8s-masters'][0] and not dry_run
+
+    # ---- 실체화 (마스터별 — kubelet이 매니페스트 변경을 감지해 해당 컴포넌트만 재기동) ----
+
+    - name: Backup current static pod manifests
+      shell: cp -a /etc/kubernetes/manifests /tmp/manifests.backup.$(date +%Y%m%d%H%M%S)
+      when: not dry_run
+
+    - name: Prepare dry-run directory for manifest preview
+      command: mkdir -p /tmp/kubeadm-reconfigure-dryrun
+      changed_when: false
+      when: dry_run
+
+    - name: Preview regenerated manifests (dry-run)
+      command: kubeadm init phase {{ item }} --config {{ kubeadm_reconfigure_config }} --dry-run
+      environment:
+        KUBEADM_INIT_DRYRUN_DIR: /tmp/kubeadm-reconfigure-dryrun
+      register: phase_dry
+      changed_when: false
+      loop:
+        - control-plane apiserver
+        - control-plane controller-manager
+        - control-plane scheduler
+        - etcd local
+      when: dry_run
+
+    - name: Show manifest preview (dry-run)
+      debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ phase_dry.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: dry_run
+
+    - name: Regenerate kube-apiserver manifest
+      command: kubeadm init phase control-plane apiserver --config {{ kubeadm_reconfigure_config }}
+      when: not dry_run
+
+    - name: Wait for kube-apiserver to be healthy
+      command: curl -sk https://127.0.0.1:6443/livez
+      register: apiserver_health
+      until: apiserver_health.stdout == 'ok'
+      retries: 30
+      delay: 5
+      changed_when: false
+      when: not dry_run
+
+    - name: Regenerate kube-controller-manager manifest
+      command: kubeadm init phase control-plane controller-manager --config {{ kubeadm_reconfigure_config }}
+      when: not dry_run
+
+    - name: Wait for kube-controller-manager to be healthy
+      command: curl -sk https://127.0.0.1:10257/healthz
+      register: cm_health
+      until: cm_health.stdout == 'ok'
+      retries: 30
+      delay: 5
+      changed_when: false
+      when: not dry_run
+
+    - name: Regenerate kube-scheduler manifest
+      command: kubeadm init phase control-plane scheduler --config {{ kubeadm_reconfigure_config }}
+      when: not dry_run
+
+    - name: Wait for kube-scheduler to be healthy
+      command: curl -sk https://127.0.0.1:10259/healthz
+      register: scheduler_health
+      until: scheduler_health.stdout == 'ok'
+      retries: 30
+      delay: 5
+      changed_when: false
+      when: not dry_run
+
+    - name: Regenerate etcd manifest
+      command: kubeadm init phase etcd local --config {{ kubeadm_reconfigure_config }}
+      when: not dry_run
+
+    - name: Wait for etcd to be healthy
+      command: curl -s http://127.0.0.1:2381/health
+      register: etcd_health
+      until: "'true' in etcd_health.stdout"
+      retries: 30
+      delay: 5
+      changed_when: false
+      when: not dry_run
+
+    - name: Verify cluster is responsive before moving to next master
+      command: kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes
+      changed_when: false
+      when: not dry_run

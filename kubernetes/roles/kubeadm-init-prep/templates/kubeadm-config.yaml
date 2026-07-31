@@ -11,9 +11,17 @@ controlPlaneEndpoint: "{{ virtual_ip }}:6443"
 {% endif %}
 networking:
   podSubnet: {{ pod_network_cidr }}
+# v1beta4의 extraArgs는 name/value 목록이다 — map 표기는 조용히 무시되어 선언에 반영되지 않는다
 apiServer:
   extraArgs:
-    service-account-issuer: "{{ service_account_issuer }}"
+  - name: service-account-issuer
+    value: "{{ service_account_issuer }}"
+{% if apiserver_encryption_enabled | default(false) %}
+  # enc-config.yaml은 encrypt-secrets 롤이 배포한다 — 파일이 없는 신규 init에서 켜면 apiserver가 기동 실패하므로
+  # 인벤토리 변수로 게이트한다 (기존 클러스터 재구성: true / 신규 구축: encrypt-secrets 적용 후 true로 전환)
+  - name: encryption-provider-config
+    value: /etc/kubernetes/pki/enc-config.yaml
+{% endif %}
   certSANs:
 {% if infra_provider | default('baremetal') == 'aws' and nlb_dns_name is defined %}
   - {{ nlb_dns_name }}
@@ -25,10 +33,20 @@ apiServer:
 {% endfor %}
   - localhost
   - 127.0.0.1
+# bind-address 0.0.0.0: Prometheus 스크레이핑용 (기본 127.0.0.1)
+controllerManager:
+  extraArgs:
+  - name: bind-address
+    value: "0.0.0.0"
+scheduler:
+  extraArgs:
+  - name: bind-address
+    value: "0.0.0.0"
 etcd:
   local:
     extraArgs:
-      listen-metrics-urls: "http://0.0.0.0:2381"
+    - name: listen-metrics-urls
+      value: "http://0.0.0.0:2381"
 {% if setup == "private" and container_registry is defined %}
 imageRepository: {{ container_registry }}
 {% endif %}
@@ -39,5 +57,9 @@ serverTLSBootstrap: true
 ---
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
+# advertiseAddress: 렌더링되는 마스터 자신의 IP — init·재구성(init phase control-plane) 모두에서
+# 기본 라우트 인터페이스 추정 대신 명시적으로 고정한다
+localAPIEndpoint:
+  advertiseAddress: {{ ansible_host }}
 nodeRegistration:
   criSocket: unix:///var/run/crio/crio.sock
