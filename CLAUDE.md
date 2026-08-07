@@ -27,12 +27,12 @@ vpn/          # Tailscale Subnet Router 설정 (roles, playbooks, inventory, ans
 
 - 세션 시작 시 작업 대상 워크스페이스(`kubernetes` 또는 `vpn`)를 확인합니다.
 - 각 워크스페이스의 `inventory/` 경로에서 인벤토리 파일을 확인하여 작업 환경을 질문합니다.
-- 인벤토리 파일명이 곧 환경명입니다 (예: `kubernetes/inventory/aws-ec2` → 환경명: `aws-ec2`).
+- 인벤토리 파일명이 곧 환경명입니다 (예: `kubernetes/inventory/baremetal` → 환경명: `baremetal`).
 - 환경이 하나뿐일 경우 질문을 생략하고 해당 환경을 사용합니다.
 
 ### kubeconfig 파일 관리
 
-- kubeconfig 파일은 `.kube/{환경명}.config` 경로에 위치합니다 (예: `.kube/aws-ec2.config`).
+- kubeconfig 파일은 `.kube/{환경명}.config` 경로에 위치합니다 (예: `.kube/baremetal.config`).
 - 쿠버네티스 구축 직후 또는 kubeconfig 파일이 존재하지 않는 경우:
   - 해당 환경의 쿠버네티스 클러스터에서 `/etc/kubernetes/admin.conf` 파일을 `.kube/{환경명}.config`로 복제합니다.
 
