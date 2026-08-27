@@ -1,32 +1,64 @@
 #!/bin/bash
 # kube-vip VIP 이동 감지 → Tailscale SR 자동 승격/강등
-set -euo pipefail
+# tailscale 명령 실패는 로그·재시도로 처리한다 — 감시 루프는 승격/강등 실패에도 살아남는다.
+set -uo pipefail
 
 VIP="{{ virtual_ip }}"
 IFACE="{{ network_interface }}"
 PROMOTE_SCRIPT="/usr/local/bin/promote-to-sr.sh"
 DEMOTE_SCRIPT="/usr/local/bin/demote-to-node.sh"
+RETRY_INTERVAL=30
 
 log() { logger -t tailscale-vip-watcher "$*"; echo "$*"; }
 
-# 시작 시 현재 상태 동기화
-if ip addr show dev "$IFACE" | grep -q "${VIP}/"; then
-    log "시작: VIP 감지됨 → SR 승격"
-    "$PROMOTE_SCRIPT"
-else
-    log "시작: VIP 없음 → SR 강등"
-    "$DEMOTE_SCRIPT"
-fi
+# VIP 보유 여부로 원하는 상태를 정한다: sr | node
+desired_state() {
+    if ip addr show dev "$IFACE" | grep -q "${VIP}/"; then
+        echo "sr"
+    else
+        echo "node"
+    fi
+}
 
-# ip monitor로 VIP 변경 이벤트 감시
-ip monitor address dev "$IFACE" | while read -r line; do
-    if echo "$line" | grep -q "${VIP}/"; then
-        if echo "$line" | grep -q "^Deleted"; then
-            log "VIP 제거됨 → SR 강등"
-            "$DEMOTE_SCRIPT"
-        else
-            log "VIP 추가됨 → SR 승격"
-            "$PROMOTE_SCRIPT"
+# 원하는 상태를 적용한다. 실패해도 죽지 않고 비0을 돌려준다 — 재시도는 감시 루프의 몫.
+apply_state() {
+    local want="$1"
+    if [ "$want" = "sr" ]; then
+        if "$PROMOTE_SCRIPT"; then
+            log "SR 승격 적용 완료"
+            return 0
         fi
+        log "SR 승격 실패 (tailscale 명령 불능 추정) — 최대 ${RETRY_INTERVAL}초 후 재시도"
+    else
+        if "$DEMOTE_SCRIPT"; then
+            log "SR 강등 적용 완료"
+            return 0
+        fi
+        log "SR 강등 실패 (tailscale 명령 불능 추정) — 최대 ${RETRY_INTERVAL}초 후 재시도"
+    fi
+    return 1
+}
+
+applied=""
+
+# 시작 동기화 — 실패해도 감시 루프로 진입한다(루프가 재시도)
+want=$(desired_state)
+log "시작: 원하는 상태 ${want} (VIP ${VIP} @ ${IFACE})"
+if apply_state "$want"; then applied="$want"; fi
+
+# ip monitor 이벤트 + ${RETRY_INTERVAL}초 주기 tick으로 원하는 상태에 계속 수렴시킨다.
+# 이벤트 줄 내용은 해석하지 않는다 — 매번 현재 VIP 유무를 다시 읽어 반영한다.
+ip monitor address dev "$IFACE" | while true; do
+    line=""
+    IFS= read -t "$RETRY_INTERVAL" -r line
+    rc=$?
+    # rc 0: 이벤트 수신 / rc>128: 타임아웃 tick / 그 외: 스트림 종료(EOF)
+    if [ "$rc" -ne 0 ] && [ "$rc" -le 128 ]; then
+        log "ip monitor 스트림 종료 — 유닛을 종료하고 systemd 재시작에 맡긴다"
+        exit 1
+    fi
+    want=$(desired_state)
+    if [ "$want" != "$applied" ]; then
+        if apply_state "$want"; then applied="$want"; fi
     fi
 done

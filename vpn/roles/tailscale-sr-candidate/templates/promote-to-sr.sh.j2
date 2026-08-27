@@ -12,6 +12,7 @@ tailscale set \
 echo "  완료."
 
 echo "[2/2] 상태 확인..."
-tailscale status
+# 정보성 출력 — 실패해도 승격 결과와 무관하므로 유닛을 죽이지 않는다
+tailscale status || echo "  (정보) tailscale status 실패 — 무시"
 echo ""
 echo "중요: 공유기 정적 경로를 이 노드 IP($(hostname -I | awk '{print $1}'))로 변경하세요."
