@@ -61,7 +61,13 @@ ansible-playbook -i inventory/<env> playbooks/<플레이북>.yaml
 
 ## 다른 저장소와의 경계
 
-받는 것은 없다 — 노드 · 클러스터 하부가 가장 아래 층이다. `vpn/` 의 Tailscale 인증 키는 Tailscale 콘솔에서 오고, 이 셋 밖이다.
+받는 것 — 값의 합의 하나다. 코드나 산출물을 읽는 일은 없다:
+
+| 넘기는 저장소 | 무엇 | 그쪽의 자리 | 이 저장소의 자리 |
+|---|---|---|---|
+| jyoliar-platform-terraform | OIDC 발급자 URL | `iam` 변수 `k8s_oidc_issuer_url` 이 먼저 정한다 | 인벤토리 `service_account_issuer` → kubeadm 템플릿. 같은 값이어야 IRSA 가 선다 |
+
+`vpn/` 의 Tailscale 인증 키는 Tailscale 콘솔에서 오고, 이 셋 밖이다.
 
 넘기는 것:
 
@@ -70,4 +76,3 @@ ansible-playbook -i inventory/<env> playbooks/<플레이북>.yaml
 | jyoliar-k8s | 클러스터와 admin kubeconfig | 구축 뒤 `/etc/kubernetes/admin.conf` | `.kube/{env}.config` — 초기 구축 스크립트가 요구 |
 | jyoliar-k8s | kube-vip 컨트롤 플레인 VIP · LoadBalancer IP 풀 | 인벤토리의 kube-vip 변수 · [`kubernetes/roles/kube-vip`](kubernetes/roles/kube-vip) | Gateway 의 LoadBalancer 주소 |
 | jyoliar-k8s | Longhorn 용 디스크 | [`longhorn-prep.yaml`](kubernetes/playbooks/longhorn-prep.yaml) | `platform/overlays/{env}/longhorn` |
-| jyoliar-platform-terraform | OIDC 발급자 URL | 인벤토리 `service_account_issuer` → kubeadm 템플릿 | `iam` 워크스페이스의 `k8s_oidc_issuer_url` — 두 값이 같아야 IRSA 가 선다 |
