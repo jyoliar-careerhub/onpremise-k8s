@@ -149,7 +149,7 @@ proxy_port=6443
 image_pull_type=always
 # setup: public or private, put private to use private repo and public to use public repos
 setup=public
-encoded_secret="qZgWyJSxchIjmW2kNZ43i+qeovMq2cSxwzEltzlXbFE="
+# encoded_secret(apiserver Secret 암호화 키 목록)은 group_vars/all/vault.yml 에 있다 — ansible-vault 로 암호화
 service_account_issuer=https://k8s-oidc.jyo-liar.com
 
 # Container images: to be changed if using private container registry

@@ -6,6 +6,9 @@ resources:
     providers:
     - aescbc:
         keys:
-        - name: key1
-          secret: {{encoded_secret}}
+{# encoded_secret 은 키 목록(group_vars/all/vault.yml) — 첫 키가 쓰기 키, 나머지는 복호화용. 순서대로 렌더한다. #}
+{% for key in encoded_secret %}
+        - name: {{ key.name }}
+          secret: {{ key.secret }}
+{% endfor %}
     - identity: {}

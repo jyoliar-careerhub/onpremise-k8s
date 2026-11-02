@@ -179,7 +179,11 @@ kubectl apply -f manifest.yaml -n default --kubeconfig .kube/{환경명}.config
 - `pod_network_cidr`: Pod 네트워크 CIDR (기본: 10.244.0.0/16, Flannel용)
 - `virtual_ip`: Keepalived용 VIP
 - `setup`: `public` 또는 `private` (프라이빗 레지스트리 사용 여부)
-- `encoded_secret`: 시크릿 암호화 키 (Base64)
+- `encoded_secret`: apiserver Secret 암호화 키 **목록**(`[{name, secret}]`, Base64) — 인벤토리 평문이 아니라 `inventory/group_vars/all/vault.yml` 에 있고 파일 전체가 ansible-vault 로 암호화되어 있다. vault password 는 `kubernetes/.vault_pass`(gitignore, `ansible.cfg` 의 `vault_password_file`). 첫 키가 쓰기 키 — 로테이션은 ops-workflow#73
+
+### Ansible Vault password 의 위치
+
+`kubernetes/.vault_pass` 는 gitignore 대상이라 clone · worktree 에는 없다. 값을 찾을 때는 ticket-engineer 하네스의 참조 저장소 경로 `workspace/ref/onpremise-k8s/kubernetes/.vault_pass` 를 본다 — 거기 보관본이 있다. 작업 worktree 의 `kubernetes/` 에 같은 이름으로 복사하면 `ansible.cfg` 가 집어 쓴다. 값은 대화에 출력하지 않는다.
 
 ### 주요 설정 변수 (vpn/inventory)
 

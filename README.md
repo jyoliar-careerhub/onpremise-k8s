@@ -25,7 +25,8 @@ remove_known_hosts.sh  # 서버를 새로 만든 뒤 SSH known_hosts 정리
 ## 환경
 
 - 환경은 인벤토리 파일이다 — `kubernetes/inventory/<env>` · `vpn/inventory/<env>`. 파일명이 환경명이고, 디렉터리의 파일 목록이 환경 목록이다.
-- 노드 그룹(컨트롤 플레인 · 워커 · 새로 더할 노드 · Raspberry Pi 전용)과 버전 · 네트워크 · kube-vip · Secret 암호화 · OIDC 발급자 변수는 전부 인벤토리에 있다. 값은 인벤토리가 답한다.
+- 노드 그룹(컨트롤 플레인 · 워커 · 새로 더할 노드 · Raspberry Pi 전용)과 버전 · 네트워크 · kube-vip · OIDC 발급자 변수는 전부 인벤토리에 있다. 값은 인벤토리가 답한다.
+- Secret 암호화 키(`encoded_secret`)만 예외다 — `kubernetes/inventory/group_vars/all/vault.yml` 에 ansible-vault 로 암호화되어 있다. vault password 파일 `kubernetes/.vault_pass` 는 gitignore 대상이고 `ansible.cfg` 가 가리키므로, 파일만 있으면 플레이북은 추가 입력 없이 돈다. password 의 저장소 밖 백업은 사람이 관리한다 — 분실하면 클러스터 Secret 을 복호화할 수 없다.
 - 구축이 끝난 클러스터의 admin kubeconfig(`/etc/kubernetes/admin.conf`)는 로컬 `.kube/<env>.config` 로 복제해 쓴다 — gitignore 대상이다.
 
 ## 반영 방법
