@@ -1,2 +1,4 @@
 .claude/settings.local.json
 .kube/*
+# Ansible Vault password — 로컬에만 둔다 (ops-workflow#73)
+kubernetes/.vault_pass

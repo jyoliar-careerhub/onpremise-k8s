@@ -7,5 +7,8 @@ resources:
     - identity: {}
     - aescbc:
         keys:
-        - name: key1
-          secret: {{encoded_secret}}
+{# encoded_secret 은 키 목록(group_vars/all/vault.yml) — encrypt-secrets 와 같은 변수 · 같은 순서. #}
+{% for key in encoded_secret %}
+        - name: {{ key.name }}
+          secret: {{ key.secret }}
+{% endfor %}
